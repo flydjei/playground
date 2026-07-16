@@ -1,1 +1,15 @@
-# playground
+# 라이언의 playground
+
+⚡ side project HQ
+
+진지함은 잠깐 내려두고 여기서 이것저것 실험하는 중.
+`playground` repo에 쌓인 결과물들, 아래에서 바로 열어볼 수 있음.
+
+## playground/
+
+- 📄 [README.md](./README.md) — 저장소 소개
+- 🧮 [ip-subnet-calculator.html](./ip-subnet-calculator.html) — IP 서브넷 계산기
+
+---
+
+made for fun · [github.com](https://github.com/)
