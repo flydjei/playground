@@ -7,7 +7,7 @@
 
 ## playground/
 
-- 📄 [README.md](https://flydjei.github.io/playground/README.md) — 저장소 소개
+- 📄 [README.md](https://flydjei.github.io/playground/index.html) — 저장소 소개
 - 🧮 [ip-subnet-calculator.html](https://flydjei.github.io/playground/ip-subnet-calculator.html) — IP 서브넷 계산기
 
 ---
