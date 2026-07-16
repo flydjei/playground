@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>서브넷 IP 목록 계산기</title>
+<style>
+  :root {
+    color-scheme: light dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+    margin: 0;
+    padding: 24px;
+    background: #f4f5f7;
+    color: #1c1c1e;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 16px;
+  }
+  .container {
+    display: flex;
+    gap: 20px;
+    height: 65vh;
+    min-height: 420px;
+  }
+  .column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #d9dbe0;
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .column h2 {
+    font-size: 14px;
+    margin: 0 0 10px;
+    color: #444;
+    font-weight: 600;
+  }
+  textarea {
+    flex: 1;
+    width: 100%;
+    resize: none;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+  }
+  textarea:focus {
+    border-color: #4a7dfc;
+  }
+  textarea[readonly] {
+    background: #fafafa;
+  }
+  button {
+    margin-top: 12px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #4a7dfc;
+    color: #fff;
+  }
+  button:hover { background: #3a6ae0; }
+  button:disabled { background: #b7c2d9; cursor: not-allowed; }
+  #status {
+    margin-top: 14px;
+    font-size: 13px;
+    color: #555;
+    white-space: pre-wrap;
+    min-height: 18px;
+  }
+  #status.error { color: #c0392b; }
+  #copyBtn.copied { background: #2ecc71; }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #1e1f22; color: #e6e6e6; }
+    .column { background: #2a2b2e; border-color: #3a3b3e; }
+    .column h2 { color: #bbb; }
+    textarea { background: #1e1f22; color: #e6e6e6; border-color: #444; }
+    textarea[readonly] { background: #232427; }
+    #status { color: #aaa; }
+  }
+</style>
+</head>
+<body>
+
+<h1>서브넷 IP 목록 계산기</h1>
+
+<div class="container">
+  <div class="column">
+    <h2>서브넷 포함 IP 입력 (줄바꿈으로 구분, 예: 172.17.0.0/24)</h2>
+    <textarea id="input" placeholder="172.17.0.0/24&#10;10.0.0.0/30&#10;192.168.1.5"></textarea>
+    <button id="calcBtn">계산</button>
+  </div>
+
+  <div class="column">
+    <h2>개별 IP 목록</h2>
+    <textarea id="output" readonly placeholder="계산 결과가 여기에 표시됩니다."></textarea>
+    <button id="copyBtn">복사</button>
+  </div>
+</div>
+
+<div id="status"></div>
+
+<script>
+const MAX_PER_ENTRY = 65536; // 항목당 최대 IP 개수 (2^16, /16 대역까지 허용)
+const MAX_TOTAL = 200000;    // 전체 합산 최대 IP 개수
+
+const inputEl = document.getElementById('input');
+const outputEl = document.getElementById('output');
+const statusEl = document.getElementById('status');
+const calcBtn = document.getElementById('calcBtn');
+const copyBtn = document.getElementById('copyBtn');
+
+function ipToLong(ip) {
+  const parts = ip.split('.');
+  if (parts.length !== 4) return null;
+  const nums = [];
+  for (const p of parts) {
+    if (!/^\d{1,3}$/.test(p)) return null;
+    const n = Number(p);
+    if (n < 0 || n > 255) return null;
+    nums.push(n);
+  }
+  return ((nums[0] << 24) | (nums[1] << 16) | (nums[2] << 8) | nums[3]) >>> 0;
+}
+
+function longToIp(long) {
+  return [
+    (long >>> 24) & 255,
+    (long >>> 16) & 255,
+    (long >>> 8) & 255,
+    long & 255
+  ].join('.');
+}
+
+function maskFromPrefix(prefix) {
+  if (prefix === 0) return 0;
+  return (0xFFFFFFFF << (32 - prefix)) >>> 0;
+}
+
+// 한 줄(예: "172.17.0.0/24" 또는 "192.168.1.5")을 파싱해 { network, broadcast, count } 반환
+function parseLine(line) {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+
+  let ipPart = trimmed;
+  let prefix = 32;
+
+  if (trimmed.includes('/')) {
+    const [ip, p] = trimmed.split('/');
+    ipPart = ip;
+    if (!/^\d{1,2}$/.test(p)) {
+      throw new Error(`잘못된 서브넷 표기: "${trimmed}"`);
+    }
+    prefix = Number(p);
+    if (prefix < 0 || prefix > 32) {
+      throw new Error(`잘못된 프리픽스(0~32): "${trimmed}"`);
+    }
+  }
+
+  const ipLong = ipToLong(ipPart);
+  if (ipLong === null) {
+    throw new Error(`잘못된 IP 주소: "${trimmed}"`);
+  }
+
+  const mask = maskFromPrefix(prefix);
+  const network = (ipLong & mask) >>> 0;
+  const broadcast = (network | (~mask >>> 0)) >>> 0;
+  const count = broadcast - network + 1;
+
+  return { source: trimmed, network, broadcast, count };
+}
+
+calcBtn.addEventListener('click', () => {
+  const lines = inputEl.value.split('\n');
+  const resultIps = [];
+  const messages = [];
+  let hasError = false;
+  let totalCount = 0;
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    try {
+      const parsed = parseLine(line);
+      if (!parsed) continue;
+
+      if (parsed.count > MAX_PER_ENTRY) {
+        messages.push(`⚠ "${parsed.source}" 는 IP ${parsed.count.toLocaleString()}개로 너무 많아 건너뜁니다. (최대 ${MAX_PER_ENTRY.toLocaleString()}개)`);
+        continue;
+      }
+      if (totalCount + parsed.count > MAX_TOTAL) {
+        messages.push(`⚠ 전체 IP 개수가 ${MAX_TOTAL.toLocaleString()}개를 초과하여 "${parsed.source}" 이후 항목은 건너뜁니다.`);
+        break;
+      }
+
+      for (let cur = parsed.network; cur <= parsed.broadcast; cur++) {
+        resultIps.push(longToIp(cur));
+      }
+      totalCount += parsed.count;
+    } catch (err) {
+      hasError = true;
+      messages.push(`✖ ${err.message}`);
+    }
+  }
+
+  outputEl.value = resultIps.join('\n');
+  statusEl.classList.toggle('error', hasError);
+
+  const summary = `총 ${resultIps.length.toLocaleString()}개의 IP가 생성되었습니다.`;
+  statusEl.textContent = messages.length ? `${summary}\n${messages.join('\n')}` : summary;
+});
+
+copyBtn.addEventListener('click', async () => {
+  if (!outputEl.value) return;
+
+  try {
+    await navigator.clipboard.writeText(outputEl.value);
+  } catch (err) {
+    outputEl.removeAttribute('readonly');
+    outputEl.select();
+    document.execCommand('copy');
+    outputEl.setAttribute('readonly', 'true');
+  }
+
+  copyBtn.textContent = '복사됨!';
+  copyBtn.classList.add('copied');
+  setTimeout(() => {
+    copyBtn.textContent = '복사';
+    copyBtn.classList.remove('copied');
+  }, 1200);
+});
+</script>
+
+</body>
+</html>
