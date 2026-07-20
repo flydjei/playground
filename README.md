@@ -9,6 +9,7 @@
 
 - 📄 [index.html](https://flydjei.github.io/playground/index.html) — 저장소 소개
 - 🧮 [ip-subnet-calculator.html](https://flydjei.github.io/playground/ip-subnet-calculator.html) — IP 서브넷 계산기
+- 🧹 [ip-extractor.html](https://flydjei.github.io/playground/ip-extractor.html) — IP 추출기
 
 ---
 
