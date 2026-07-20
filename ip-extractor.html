@@ -117,10 +117,24 @@ const statusEl = document.getElementById('status');
 const extractBtn = document.getElementById('extractBtn');
 const copyBtn = document.getElementById('copyBtn');
 
-// 각 줄에서 숫자/점이 아닌 첫 문자부터 줄 끝까지 제거 (행 번호는 그대로 유지)
+// 한 줄에서 유효한 IPv4 형식(옥텟 4개, 각 0~255)의 첫 토큰만 추출
+function extractIp(line) {
+  const candidates = line.match(/[0-9.]+/g);
+  if (!candidates) return '';
+
+  for (const token of candidates) {
+    const parts = token.split('.');
+    if (parts.length !== 4) continue;
+    if (parts.some(p => !/^\d{1,3}$/.test(p) || Number(p) > 255)) continue;
+    return token;
+  }
+  return '';
+}
+
+// 각 줄에서 유효한 IP 형식만 남기고 나머지는 공백 처리 (행 번호는 그대로 유지)
 extractBtn.addEventListener('click', () => {
   const lines = inputEl.value.split(/\r\n|\r|\n/);
-  const resultLines = lines.map(line => line.replace(/[^0-9.].*$/, ''));
+  const resultLines = lines.map(extractIp);
 
   outputEl.value = resultLines.join('\n');
 
