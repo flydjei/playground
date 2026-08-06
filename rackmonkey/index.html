@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RackMonkey — IDC 랙 자원 관리</title>
+<meta name="description" content="RackMonkey 1.2.5 기능 명세를 기반으로 만든 IDC 랙 자원 관리 프로토타입">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-gov.min.css">
+<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">본문으로 건너뛰기</a>
+
+<div class="shell">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <rect x="4" y="2.5" width="16" height="19" rx="2.5"/>
+          <path d="M7.5 7h9M7.5 12h9M7.5 17h5"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <strong>RackMonkey</strong>
+        <small>IDC 랙 자원 관리</small>
+      </span>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="주요 메뉴">
+      <a class="nav-item" href="#/devices"        data-match="devices,device">
+        <span class="ni">🖥️</span> 장비 <span class="nav-count" data-count="devices"></span></a>
+      <a class="nav-item" href="#/racks"          data-match="racks,rack">
+        <span class="ni">🗄️</span> 랙 <span class="nav-count" data-count="racks"></span></a>
+      <a class="nav-item" href="#/physical"       data-match="physical">
+        <span class="ni">📐</span> 랙 실장도</a>
+      <a class="nav-item" href="#/apps"           data-match="apps,app">
+        <span class="ni">🧩</span> 앱 <span class="nav-count" data-count="apps"></span></a>
+      <a class="nav-item" href="#/reports"        data-match="reports">
+        <span class="ni">📊</span> 리포트</a>
+      <a class="nav-item" href="#/config"         data-match="config">
+        <span class="ni">⚙️</span> 설정</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <a class="nav-item subtle" href="#/system"  data-match="system">
+        <span class="ni">ℹ️</span> 시스템 정보</a>
+      <label class="ro-toggle" title="읽기 전용 모드에서는 추가·수정·삭제가 비활성화됩니다">
+        <input type="checkbox" id="readonly-toggle"> <span>읽기 전용 모드</span>
+      </label>
+    </div>
+  </aside>
+
+  <!-- ===== Topbar ===== -->
+  <header class="topbar">
+    <button class="icon-btn only-mobile" id="menu-btn" aria-label="메뉴 열기">☰</button>
+
+    <form class="search" id="search-form" role="search">
+      <span class="search-ico" aria-hidden="true">🔎</span>
+      <input type="search" id="search-input" placeholder="장비명 · 시리얼 · 자산번호 부분 검색 (예: web, SN-3F)" autocomplete="off" aria-label="통합 검색">
+      <kbd>/</kbd>
+    </form>
+
+    <div class="topbar-right">
+      <button class="icon-btn" id="print-btn" title="현재 화면 인쇄">🖨️</button>
+      <button class="icon-btn" id="theme-btn" title="테마 전환">🌗</button>
+      <div class="who" title="접속 계정">
+        <span class="avatar">R</span>
+        <span class="who-text"><strong>rackmonkey</strong><small>10.20.30.41</small></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="main" id="main" tabindex="-1"></main>
+
+  <footer class="appfoot">
+    <span>접속: <b id="foot-user">rackmonkey</b> @ <b>10.20.30.41</b></span>
+    <span class="dot">·</span>
+    <span>RackMonkey <b id="foot-version">1.2.5</b> prototype</span>
+    <span class="dot">·</span>
+    <span>페이지 생성 <b id="foot-time">—</b></span>
+    <span class="dot">·</span>
+    <span class="foot-note">프로토타입 — 데이터는 브라우저 메모리에만 존재하며 새로고침 시 초기화됩니다.</span>
+  </footer>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<div id="modal-root"></div>
+<div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+<script src="./assets/data.js"></script>
+<script src="./assets/app.js"></script>
+</body>
+</html>
