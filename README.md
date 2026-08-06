@@ -6,7 +6,6 @@
 
 ## playground/
 
-- 📄 [index.html](https://flydjei.github.io/playground/index.html) — 저장소 소개
 - 🧮 [ip-subnet-calculator.html](https://flydjei.github.io/playground/ip-subnet-calculator.html) — IP 서브넷 계산기
 - 🧹 [ip-extractor.html](https://flydjei.github.io/playground/ip-extractor.html) — IP 추출기
 - 🗄️ [rackmonkey/](https://flydjei.github.io/playground/rackmonkey/) — IDC 랙 자원 관리 프로토타입
@@ -14,6 +13,7 @@
 ### rackmonkey/
 
 오픈소스 IDC 랙 관리 도구 프론트엔드 프로토타입.
+
 데이터베이스 없이 브라우저 메모리에서만 동작하며, 새로고침하면 초기 데이터로 돌아감.
 
 - **장비** — 8가지 보기 형식(기본/자산/DNS/OS/지원/위치/앱/전체), 필터·정렬·CSV 내보내기, 추가·복사·편집·삭제
