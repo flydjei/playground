@@ -581,15 +581,20 @@ textarea.inp { resize: vertical; min-height: 70px; line-height: 1.5; }
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
+  overflow: hidden;
   animation: pop .16s cubic-bezier(.2,.9,.3,1.1);
 }
 @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.985) } }
 .modal.wide { width: min(940px, 100%); }
-.modal-head { display: flex; align-items: center; padding: 15px 18px; border-bottom: 1px solid var(--border); }
+.modal > form {
+  display: flex; flex-direction: column;
+  min-height: 0; flex: 1;
+}
+.modal-head { flex: none; display: flex; align-items: center; padding: 15px 18px; border-bottom: 1px solid var(--border); }
 .modal-head h2 { font-size: 15.5px; }
 .modal-head .close { margin-left: auto; }
-.modal-body { padding: 18px; overflow-y: auto; }
-.modal-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 13px 18px; border-top: 1px solid var(--border); background: var(--surface-2); }
+.modal-body { flex: 1; min-height: 0; padding: 18px; overflow-y: auto; }
+.modal-foot { flex: none; display: flex; gap: 8px; justify-content: flex-end; padding: 13px 18px; border-top: 1px solid var(--border); background: var(--surface-2); }
 
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 13px; }
 .form-grid .fld { display: flex; flex-direction: column; gap: 5px; }
