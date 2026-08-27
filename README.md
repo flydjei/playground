@@ -8,9 +8,9 @@
 
 - 🧮 [ip-subnet-calculator.html](https://flydjei.github.io/playground/ip-subnet-calculator.html) — IP 서브넷 계산기
 - 🧹 [ip-extractor.html](https://flydjei.github.io/playground/ip-extractor.html) — IP 추출기
-- 🗄️ [rackmonkey/](https://flydjei.github.io/playground/rackmonkey/) — IDC 랙 자원 관리 프로토타입
+- 🗄️ [rackmanager/](https://flydjei.github.io/playground/rackmanager/) — IDC 랙 자원 관리 프로토타입
 
-### rackmonkey/
+### rackmanager/
 
 오픈소스 IDC 랙 관리 도구 프론트엔드 프로토타입.
 
