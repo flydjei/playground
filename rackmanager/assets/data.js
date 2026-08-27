@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RackMonkey prototype — in-memory sample dataset
+   RackManager prototype — in-memory sample dataset
    --------------------------------------------------------------------------
    프로토타입이므로 데이터베이스는 사용하지 않습니다.
    모든 데이터는 이 파일에서 생성되어 브라우저 메모리에만 존재하며,
@@ -228,7 +228,7 @@
     ['ups-jeju-01','dm-gabia', 'rk-jeju01', 1, 'hw-srt5k',   'os-none',   'org-infra', 'ro-power',  'sl-silver']
   ];
 
-  const EDITORS = ['rackmonkey', 'jhkim', 'ryan', 'sypark', 'dwlee'];
+  const EDITORS = ['rackmanager', 'jhkim', 'ryan', 'sypark', 'dwlee'];
   const PURCHASE_YEARS = ['2021-11-02', '2022-05-17', '2023-02-09', '2023-08-24', '2024-01-15',
                           '2024-06-30', '2024-11-11', '2025-03-05', '2025-09-19', '2026-01-22'];
 
@@ -262,7 +262,7 @@
       notes: extra.notes || '',
       updatedBy: pick(EDITORS),
       updatedAt: '2026-0' + int(1, 7) + '-' + String(int(10, 28)) + ' ' + String(int(9, 18)).padStart(2, '0') + ':' + String(int(0, 59)).padStart(2, '0'),
-      createdBy: 'rackmonkey'
+      createdBy: 'rackmanager'
     };
   });
 
@@ -304,7 +304,7 @@
       { name: 'Excel Export', enabled: true, notes: '표 형태 화면을 CSV(UTF-8 BOM)로 내려받기' },
       { name: 'Dell Warranty', enabled: true, notes: '서비스 태그로 보증 정보 조회 링크' }
     ],
-    licence: 'GNU General Public Licence v2 (원본 RackMonkey 기준)'
+    licence: 'GNU General Public Licence v2 (원본 RackManager 기준)'
   };
 
   global.RM_DATA = {

@@ -1,6 +1,6 @@
 /* ==========================================================================
-   RackMonkey prototype — application
-   RackMonkey 1.2.5 Features / User Guide 문서의 기능 구성을 그대로 옮긴
+   RackManager prototype — application
+   RackManager 1.2.5 Features / User Guide 문서의 기능 구성을 그대로 옮긴
    프론트엔드 전용 프로토타입. 모든 CRUD는 메모리 배열을 조작합니다.
    ========================================================================== */
 (function () {
@@ -910,7 +910,7 @@
       inUse: (x) => db.devices.some((d) => d.hardwareId === x.id),
       fields: () => [{ k: 'name', label: '모델명', required: true },
                      { k: 'manufacturerId', label: '제조사', type: 'select', options: hwMakers() },
-                     { k: 'sizeU', label: '크기 (U)', type: 'number', min: 1, max: 48, help: 'RackMonkey는 정수 U만 지원합니다 (1.5U 등은 반올림)' },
+                     { k: 'sizeU', label: '크기 (U)', type: 'number', min: 1, max: 48, help: 'RackManager는 정수 U만 지원합니다 (1.5U 등은 반올림)' },
                      { k: 'notes', label: '비고', type: 'textarea', full: true }]
     },
     os: {
@@ -957,7 +957,7 @@
     const sec = CONFIG_SECTIONS[key];
     const rows = sec.list();
 
-    return pageHead('설정', 'RackMonkey의 기본 구성 요소를 관리합니다. 장비를 등록하기 전에 먼저 채워두면 편합니다.', `
+    return pageHead('설정', 'RackManager의 기본 구성 요소를 관리합니다. 장비를 등록하기 전에 먼저 채워두면 편합니다.', `
       <button class="btn primary mutating" data-action="cfg-add" data-sec="${esc(key)}">＋ ${esc(sec.entity)} 추가</button>
       <a class="btn" href="#/system">시스템 정보</a>
     `) + `
@@ -980,8 +980,8 @@
 
   function renderSystem() {
     const s = db.system;
-    return pageHead('시스템 정보', 'RackMonkey 프로토타입 및 데이터 현황', '', [{ label: '설정', href: '#/config' }, { label: '시스템 정보' }]) + `
-    <div class="notice">ℹ️ <div>이 화면은 원본 RackMonkey의 <b>View RackMonkey System &amp; Database Information</b> 페이지에 대응합니다.
+    return pageHead('시스템 정보', 'RackManager 프로토타입 및 데이터 현황', '', [{ label: '설정', href: '#/config' }, { label: '시스템 정보' }]) + `
+    <div class="notice">ℹ️ <div>이 화면은 원본 RackManager의 <b>View RackManager System &amp; Database Information</b> 페이지에 대응합니다.
       버그 리포트 시 이 정보를 함께 첨부하면 도움이 됩니다.</div></div>
 
     <div class="grid c2">
@@ -1200,12 +1200,12 @@
       if (err) { toast(err); return false; }
       if (isNew) {
         db.devices.push(Object.assign({
-          id: uid('dev'), createdBy: 'rackmonkey', updatedBy: 'rackmonkey',
+          id: uid('dev'), createdBy: 'rackmanager', updatedBy: 'rackmanager',
           updatedAt: new Date().toISOString().slice(0, 16).replace('T', ' ')
         }, v));
         toast(`장비 '${v.name}'을(를) 추가했습니다.`);
       } else {
-        Object.assign(device, v, { updatedBy: 'rackmonkey', updatedAt: new Date().toISOString().slice(0, 16).replace('T', ' ') });
+        Object.assign(device, v, { updatedBy: 'rackmanager', updatedAt: new Date().toISOString().slice(0, 16).replace('T', ' ') });
         toast('저장했습니다.');
       }
       return true;
@@ -1217,7 +1217,7 @@
     const fields = [
       { k: 'name', label: '랙 이름', required: true, placeholder: '예: GN-A-04' },
       { k: 'roomId', label: '전산실', type: 'select', options: db.rooms, labeler: (r) => nm(L.building(r.buildingId)) + ' · ' + r.name },
-      { k: 'row', label: '열(Row)', placeholder: '예: A열', help: '원본 RackMonkey 1.2.5는 UI에서 행 관리를 지원하지 않습니다' },
+      { k: 'row', label: '열(Row)', placeholder: '예: A열', help: '원본 RackManager 1.2.5는 UI에서 행 관리를 지원하지 않습니다' },
       { k: 'sizeU', label: '크기 (U)', type: 'number', min: 1, max: 60, required: true },
       { k: 'notes', label: '비고', type: 'textarea', full: true }
     ];
@@ -1328,7 +1328,7 @@
       if (c.key === 'pos') return r.posLabel + ' (' + r.sizeU + 'U)';
       return c.value(r);
     })));
-    download(`rackmonkey-devices-${view}-${todayISO()}.csv`, csv);
+    download(`rackmanager-devices-${view}-${todayISO()}.csv`, csv);
     toast(`${rows.length}건을 내보냈습니다.`);
   }
 
@@ -1336,14 +1336,14 @@
     const rows = rackRows();
     const csv = toCsv(['랙', '건물', '전산실', '열', '크기(U)', '장비 수', '사용(U)', '여유(U)', '사용률(%)', '비고'],
       rows.map((r) => [r.rack.name, r.building, r.room, r.rack.row, r.rack.sizeU, r.st.devices, r.st.used, r.st.free, r.st.pct, r.rack.notes]));
-    download(`rackmonkey-racks-${todayISO()}.csv`, csv);
+    download(`rackmanager-racks-${todayISO()}.csv`, csv);
     toast(`${rows.length}건을 내보냈습니다.`);
   }
 
   function exportApps() {
     const csv = toCsv(['앱', '연결 장비 수', '장비 목록', '비고'],
       db.apps.map((a) => [a.name, appDeviceList(a.id).length, appDeviceList(a.id).map((d) => d.name).join(' '), a.notes]));
-    download(`rackmonkey-apps-${todayISO()}.csv`, csv);
+    download(`rackmanager-apps-${todayISO()}.csv`, csv);
     toast(`${db.apps.length}건을 내보냈습니다.`);
   }
 
@@ -1356,7 +1356,7 @@
       .forEach((t) => lines.push(['운영체제', t.key, t.n + '대']));
     tally(db.devices, (d) => nm(L.hw(d.hardwareId))).forEach((t) => lines.push(['하드웨어', t.key, t.n + '대']));
     const csv = toCsv(lines[0], lines.slice(1));
-    download(`rackmonkey-report-${todayISO()}.csv`, csv);
+    download(`rackmanager-report-${todayISO()}.csv`, csv);
     toast('리포트 요약을 내보냈습니다.');
   }
 
