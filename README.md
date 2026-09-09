@@ -1,7 +1,5 @@
 # Ryan's Playground
 
-⚡ side project HQ
-
 진지함은 잠깐 내려두고 여기서 이것저것 실험하는 중.
 
 ## playground/
