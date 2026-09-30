@@ -2,22 +2,67 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="텍스트에 섞인 IPv4 주소만 골라내는 추출기">
 <title>IP 추출기</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     color-scheme: light dark;
+    --bg: #f4f5f7;
+    --fg: #1c1c1e;
+    --card: #ffffff;
+    --border: #d9dbe0;
+    --muted: #555;
+    --heading: #444;
+    --field-bg: #ffffff;
+    --field-ro-bg: #fafafa;
+    --field-border: #ccc;
+    --accent: #4a7dfc;
+    --accent-hover: #3a6ae0;
+    --accent-disabled: #b7c2d9;
+    --secondary-bg: #e7e9ee;
+    --secondary-hover: #d9dce3;
+    --secondary-fg: #1c1c1e;
+    --success: #2ecc71;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1f22;
+      --fg: #e6e6e6;
+      --card: #2a2b2e;
+      --border: #3a3b3e;
+      --muted: #aaa;
+      --heading: #bbb;
+      --field-bg: #1e1f22;
+      --field-ro-bg: #232427;
+      --field-border: #444;
+      --accent-disabled: #3d4658;
+      --secondary-bg: #3a3b3e;
+      --secondary-hover: #46474b;
+      --secondary-fg: #e6e6e6;
+    }
   }
   * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
-    font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+    font-family: "Segoe UI", "Malgun Gothic", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
     margin: 0;
     padding: 24px;
-    background: #f4f5f7;
-    color: #1c1c1e;
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
+    background: var(--bg);
+    color: var(--fg);
   }
   h1 {
     font-size: 20px;
+    margin: 0 0 6px;
+  }
+  .desc {
+    font-size: 13px;
+    color: var(--muted);
     margin: 0 0 16px;
+    line-height: 1.5;
   }
   .container {
     display: flex;
@@ -27,18 +72,32 @@
   }
   .column {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    background: #ffffff;
-    border: 1px solid #d9dbe0;
+    background: var(--card);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 16px;
   }
+  .column-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 10px;
+  }
   .column h2 {
     font-size: 14px;
-    margin: 0 0 10px;
-    color: #444;
+    margin: 0;
+    color: var(--heading);
     font-weight: 600;
+  }
+  .count {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
   textarea {
     flex: 1;
@@ -48,119 +107,297 @@
     font-size: 13px;
     line-height: 1.5;
     padding: 10px;
-    border: 1px solid #ccc;
+    background: var(--field-bg);
+    color: var(--fg);
+    border: 1px solid var(--field-border);
     border-radius: 6px;
     outline: none;
   }
-  textarea:focus {
-    border-color: #4a7dfc;
+  textarea:focus { border-color: var(--accent); }
+  textarea[readonly] { background: var(--field-ro-bg); }
+  .options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-top: 10px;
+    font-size: 13px;
   }
-  textarea[readonly] {
-    background: #fafafa;
+  .options label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    min-height: 28px;
+  }
+  .options label.disabled { opacity: .5; cursor: not-allowed; }
+  .options input { margin: 0; width: 16px; height: 16px; }
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
   }
   button {
-    margin-top: 12px;
+    flex: 1;
+    min-height: 40px;
     padding: 10px 16px;
     font-size: 14px;
     font-weight: 600;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    background: #4a7dfc;
+    background: var(--accent);
     color: #fff;
+    touch-action: manipulation;
   }
-  button:hover { background: #3a6ae0; }
-  button:disabled { background: #b7c2d9; cursor: not-allowed; }
+  button:hover { background: var(--accent-hover); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:disabled { background: var(--accent-disabled); cursor: not-allowed; }
+  button.secondary {
+    flex: 0 0 auto;
+    background: var(--secondary-bg);
+    color: var(--secondary-fg);
+  }
+  button.secondary:hover { background: var(--secondary-hover); }
+  button.secondary:disabled { opacity: .5; background: var(--secondary-bg); }
+  button.copied { background: var(--success); }
+  .kbd-hint {
+    font-size: 11px;
+    font-weight: 400;
+    opacity: .75;
+    margin-left: 4px;
+  }
   #status {
     margin-top: 14px;
     font-size: 13px;
-    color: #555;
-    white-space: pre-wrap;
+    color: var(--muted);
+    line-height: 1.6;
     min-height: 18px;
+    overflow-wrap: anywhere;
   }
-  #copyBtn.copied { background: #2ecc71; }
 
-  @media (prefers-color-scheme: dark) {
-    body { background: #1e1f22; color: #e6e6e6; }
-    .column { background: #2a2b2e; border-color: #3a3b3e; }
-    .column h2 { color: #bbb; }
-    textarea { background: #1e1f22; color: #e6e6e6; border-color: #444; }
-    textarea[readonly] { background: #232427; }
-    #status { color: #aaa; }
+  @media (max-width: 720px) {
+    body {
+      padding: 16px;
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+    }
+    h1 { font-size: 18px; }
+    .container {
+      flex-direction: column;
+      height: auto;
+      min-height: 0;
+      gap: 14px;
+    }
+    .column { padding: 14px; }
+    #input { height: 30vh; min-height: 160px; flex: none; }
+    #output { height: 45vh; min-height: 220px; flex: none; }
+    /* iOS Safari 는 16px 미만 입력창 포커스 시 자동 확대되므로 16px 로 고정 */
+    textarea { font-size: 16px; }
+    button { min-height: 44px; }
+    .kbd-hint { display: none; }
   }
 </style>
 </head>
 <body>
 
 <h1>IP 추출기</h1>
+<p class="desc">
+  텍스트에 섞여 있는 IPv4 주소만 골라냅니다.
+  기본은 입력과 같은 줄 번호를 유지해(IP가 없는 줄은 빈 줄) 스프레드시트 열에 그대로 붙여넣을 수 있습니다.
+</p>
 
 <div class="container">
   <div class="column">
-    <h2>원본 데이터 입력 (줄바꿈으로 구분)</h2>
-    <textarea id="input" placeholder="1.234.78.200_순수관제&#10;192.168.0.2_텍스트&#10;텍스트으으으"></textarea>
-    <button id="extractBtn">IP 추출</button>
+    <div class="column-head">
+      <h2><label for="input">원본 데이터 입력</label></h2>
+      <span class="count" id="inputCount">0줄</span>
+    </div>
+    <textarea id="input" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"
+      placeholder="1.234.78.200_순수관제&#10;192.168.0.2_텍스트&#10;텍스트으으으&#10;서버 10.0.0.1, 10.0.0.2 점검"></textarea>
+    <div class="options">
+      <label><input type="checkbox" id="collectMode"> IP만 모아보기 (한 줄의 여러 IP 모두 추출)</label>
+      <label id="dedupeLabel" class="disabled"><input type="checkbox" id="dedupe" checked disabled> 중복 제거 및 정렬</label>
+      <label><input type="checkbox" id="keepCidr"> CIDR 표기(/24) 유지</label>
+    </div>
+    <div class="actions">
+      <button id="extractBtn" type="button">IP 추출<span class="kbd-hint">Ctrl+Enter</span></button>
+      <button id="clearBtn" type="button" class="secondary">지우기</button>
+    </div>
   </div>
 
   <div class="column">
-    <h2>추출된 IP 목록</h2>
-    <textarea id="output" readonly placeholder="추출 결과가 여기에 표시됩니다."></textarea>
-    <button id="copyBtn">복사</button>
+    <div class="column-head">
+      <h2><label for="output">추출된 IP 목록</label></h2>
+      <span class="count" id="outputCount">0개</span>
+    </div>
+    <textarea id="output" readonly spellcheck="false" placeholder="추출 결과가 여기에 표시됩니다."></textarea>
+    <div class="actions">
+      <button id="copyBtn" type="button" disabled>복사</button>
+      <button id="downloadBtn" type="button" class="secondary" disabled>.txt 저장</button>
+    </div>
   </div>
 </div>
 
-<div id="status"></div>
+<div id="status" role="status" aria-live="polite"></div>
 
 <script>
-const inputEl = document.getElementById('input');
-const outputEl = document.getElementById('output');
-const statusEl = document.getElementById('status');
-const extractBtn = document.getElementById('extractBtn');
-const copyBtn = document.getElementById('copyBtn');
+const $ = (id) => document.getElementById(id);
+const inputEl = $('input');
+const outputEl = $('output');
+const statusEl = $('status');
+const extractBtn = $('extractBtn');
+const clearBtn = $('clearBtn');
+const copyBtn = $('copyBtn');
+const downloadBtn = $('downloadBtn');
+const collectModeEl = $('collectMode');
+const dedupeEl = $('dedupe');
+const dedupeLabel = $('dedupeLabel');
+const keepCidrEl = $('keepCidr');
+const inputCountEl = $('inputCount');
+const outputCountEl = $('outputCount');
 
-// 한 줄에서 유효한 IPv4 형식(옥텟 4개, 각 0~255)의 첫 토큰만 추출
-function extractIp(line) {
-  const candidates = line.match(/[0-9.]+/g);
-  if (!candidates) return '';
+// 앞뒤가 숫자/점으로 이어지지 않는 "a.b.c.d" 형태 (문장 끝 마침표 "1.2.3.4." 는 허용)
+// 뒤에 선택적으로 "/prefix" 가 붙을 수 있음
+const IP_RE = /(?<![\d.])(\d{1,3}(?:\.\d{1,3}){3})(?:\/(\d{1,2}))?(?!\d|\.\d)/g;
 
-  for (const token of candidates) {
-    const parts = token.split('.');
-    if (parts.length !== 4) continue;
-    if (parts.some(p => !/^\d{1,3}$/.test(p) || Number(p) > 255)) continue;
-    return token;
-  }
-  return '';
+function isValidIp(ip) {
+  return ip.split('.').every(p => Number(p) <= 255);
 }
 
-// 각 줄에서 유효한 IP 형식만 남기고 나머지는 공백 처리 (행 번호는 그대로 유지)
-extractBtn.addEventListener('click', () => {
-  const lines = inputEl.value.split(/\r\n|\r|\n/);
-  const resultLines = lines.map(extractIp);
+// 한 줄에서 유효한 IPv4 주소를 모두 찾아 배열로 반환
+function extractIps(line, keepCidr) {
+  const result = [];
+  for (const m of line.matchAll(IP_RE)) {
+    const [, ip, prefix] = m;
+    if (!isValidIp(ip)) continue;
+    const withCidr = keepCidr && prefix !== undefined && Number(prefix) <= 32;
+    result.push(withCidr ? `${ip}/${prefix}` : ip);
+  }
+  return result;
+}
 
-  outputEl.value = resultLines.join('\n');
+function ipSortKey(s) {
+  const [ip, prefix = '32'] = s.split('/');
+  const n = ip.split('.').reduce((acc, p) => acc * 256 + Number(p), 0);
+  return n * 64 + Number(prefix);
+}
 
-  const extractedCount = resultLines.filter(l => l.trim().length > 0).length;
-  statusEl.textContent = `총 ${lines.length}줄 중 ${extractedCount}개 줄에서 IP를 추출했습니다.`;
+function fmt(n) { return n.toLocaleString(); }
+
+function splitLines(text) {
+  return text === '' ? [] : text.split(/\r\n|\r|\n/);
+}
+
+function updateInputCount() {
+  inputCountEl.textContent = `${fmt(splitLines(inputEl.value).length)}줄`;
+}
+
+function syncOptions() {
+  const collect = collectModeEl.checked;
+  dedupeEl.disabled = !collect;
+  dedupeLabel.classList.toggle('disabled', !collect);
+}
+
+function setOutput(text, ipCount) {
+  outputEl.value = text;
+  outputCountEl.textContent = `${fmt(ipCount)}개`;
+  copyBtn.disabled = downloadBtn.disabled = ipCount === 0;
+}
+
+function extract() {
+  const lines = splitLines(inputEl.value);
+  const keepCidr = keepCidrEl.checked;
+  const perLine = lines.map(line => extractIps(line, keepCidr));
+  const matchedLines = perLine.filter(ips => ips.length).length;
+  const multiLines = perLine.filter(ips => ips.length > 1).length;
+
+  let summary;
+  if (collectModeEl.checked) {
+    let ips = perLine.flat();
+    const found = ips.length;
+    if (dedupeEl.checked) {
+      ips = Array.from(new Set(ips)).sort((a, b) => ipSortKey(a) - ipSortKey(b));
+    }
+    setOutput(ips.join('\n'), ips.length);
+    summary = `총 ${fmt(lines.length)}줄에서 IP ${fmt(found)}개를 찾았습니다.`;
+    if (found !== ips.length) summary += ` (중복 ${fmt(found - ips.length)}개 제거)`;
+  } else {
+    // 각 줄의 첫 번째 IP만 남기고 나머지는 빈 줄 처리 (행 번호는 그대로 유지)
+    const resultLines = perLine.map(ips => ips[0] || '');
+    setOutput(resultLines.join('\n'), matchedLines);
+    summary = `총 ${fmt(lines.length)}줄 중 ${fmt(matchedLines)}개 줄에서 IP를 추출했습니다.`;
+    if (multiLines) summary += ` IP가 2개 이상인 줄 ${fmt(multiLines)}개는 첫 번째 IP만 사용했습니다. 모두 필요하면 "IP만 모아보기"를 켜세요.`;
+  }
+  if (!lines.length) summary = '입력된 데이터가 없습니다.';
+  statusEl.textContent = summary;
+
+  // 모바일(세로 배치)에서는 결과 영역이 화면 아래에 있으므로 자동으로 스크롤
+  if (window.matchMedia('(max-width: 720px)').matches) {
+    outputEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function flash(btn, text) {
+  const original = btn.dataset.label || btn.textContent;
+  btn.dataset.label = original;
+  btn.textContent = text;
+  btn.classList.add('copied');
+  clearTimeout(btn._timer);
+  btn._timer = setTimeout(() => {
+    btn.textContent = original;
+    btn.classList.remove('copied');
+  }, 1200);
+}
+
+extractBtn.addEventListener('click', extract);
+collectModeEl.addEventListener('change', syncOptions);
+
+inputEl.addEventListener('input', updateInputCount);
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    extract();
+  }
+});
+
+clearBtn.addEventListener('click', () => {
+  inputEl.value = '';
+  setOutput('', 0);
+  statusEl.textContent = '';
+  updateInputCount();
+  inputEl.focus();
 });
 
 copyBtn.addEventListener('click', async () => {
   if (!outputEl.value) return;
-
   try {
     await navigator.clipboard.writeText(outputEl.value);
   } catch (err) {
     outputEl.removeAttribute('readonly');
     outputEl.select();
     document.execCommand('copy');
-    outputEl.setAttribute('readonly', 'true');
+    outputEl.setAttribute('readonly', '');
+    window.getSelection()?.removeAllRanges();
   }
-
-  copyBtn.textContent = '복사됨!';
-  copyBtn.classList.add('copied');
-  setTimeout(() => {
-    copyBtn.textContent = '복사';
-    copyBtn.classList.remove('copied');
-  }, 1200);
+  flash(copyBtn, '복사됨!');
 });
+
+downloadBtn.addEventListener('click', () => {
+  if (!outputEl.value) return;
+  const blob = new Blob([outputEl.value + '\n'], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'extracted-ips.txt';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  flash(downloadBtn, '저장됨!');
+});
+
+syncOptions();
+updateInputCount();
 </script>
 
 </body>
