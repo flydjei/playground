@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한글 자음 + 한자 특수문자표</title>
+<style>
+  :root {
+    color-scheme: light dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+    margin: 0;
+    padding: 24px;
+    background: #f4f5f7;
+    color: #1c1c1e;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 6px;
+  }
+  .desc {
+    font-size: 13px;
+    color: #555;
+    margin: 0 0 16px;
+  }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 0;
+    margin-bottom: 8px;
+    background: #f4f5f7;
+  }
+  .toolbar a {
+    min-width: 34px;
+    padding: 6px 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    color: #4a7dfc;
+    background: #ffffff;
+    border: 1px solid #d9dbe0;
+    border-radius: 6px;
+  }
+  .toolbar a:hover { background: #4a7dfc; border-color: #4a7dfc; color: #fff; }
+  .column {
+    background: #ffffff;
+    border: 1px solid #d9dbe0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    scroll-margin-top: 64px;
+  }
+  .column h2 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 14px;
+    margin: 0 0 10px;
+    color: #444;
+    font-weight: 600;
+  }
+  .column h2 .key {
+    font-size: 18px;
+    color: #4a7dfc;
+  }
+  .column h2 .count {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 400;
+    color: #888;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    border-top: 1px solid #e3e5e9;
+    border-left: 1px solid #e3e5e9;
+  }
+  .cell {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    font-family: "Malgun Gothic", "Segoe UI Symbol", "Segoe UI", sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: inherit;
+    background: transparent;
+    border: none;
+    border-right: 1px solid #e3e5e9;
+    border-bottom: 1px solid #e3e5e9;
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .cell:hover { background: #eaf0ff; }
+  .cell:focus-visible { outline: 2px solid #4a7dfc; outline-offset: -2px; }
+  .cell.label { font-size: 11px; color: #888; }
+  .cell.copied { background: #2ecc71; color: #fff; }
+  #status {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #fff;
+    background: #1c1c1e;
+    border-radius: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s;
+  }
+  #status.show { opacity: .92; }
+
+  @media (max-width: 600px) {
+    body { padding: 16px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); }
+    .cell { font-size: 18px; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #1e1f22; color: #e6e6e6; }
+    .desc { color: #aaa; }
+    .toolbar { background: #1e1f22; }
+    .toolbar a { background: #2a2b2e; border-color: #3a3b3e; }
+    .column { background: #2a2b2e; border-color: #3a3b3e; }
+    .column h2 { color: #bbb; }
+    .grid, .cell { border-color: #3a3b3e; }
+    .cell:hover { background: #33405e; }
+    #status { background: #e6e6e6; color: #1c1c1e; }
+  }
+</style>
+</head>
+<body>
+
+<h1>한글 자음 + 한자 특수문자표</h1>
+<p class="desc">Windows 한국어 입력기에서 자음을 입력하고 <b>한자</b> 키를 누르면 나오는 특수문자 전체 목록입니다. 칸을 클릭하면 복사됩니다.</p>
+
+<nav class="toolbar" id="toolbar" aria-label="자음 바로가기"></nav>
+<div id="groups"></div>
+<div id="status" role="status" aria-live="polite"></div>
+
+<script>
+// 코드 포인트 구간 [시작, 끝]을 문자 배열로 펼침
+function range(...pairs) {
+  const out = [];
+  for (const [from, to] of pairs) {
+    for (let cp = from; cp <= to; cp++) out.push(String.fromCodePoint(cp));
+  }
+  return out;
+}
+
+// 공백으로 구분된 문자 목록을 배열로 변환
+const list = str => str.trim().split(/\s+/);
+
+const SOFT_HYPHEN = '­';
+
+// Windows IME(KS X 1001 기반) 자음별 특수문자 순서
+const GROUPS = [
+  { key: 'ㄱ', name: '문장 부호', chars: [
+    ...list('！ ＇ ， ． ／ ： ； ？ ＾ ＿ ｀ ｜ ￣ 、 。 · ‥ … ¨ 〃'),
+    SOFT_HYPHEN,
+    ...list('― ∥ ＼ ∼ ´ ～ ˇ ˘ ˝ ˚ ˙ ¸ ˛ ¡ ¿ ː')
+  ]},
+  { key: 'ㄴ', name: '괄호', chars: list('＂ （ ） ［ ］ ｛ ｝ ‘ ’ “ ” 〔 〕 〈 〉 《 》 「 」 『 』 【 】') },
+  { key: 'ㄷ', name: '수학 기호', chars: list(
+    '＋ － ＜ ＝ ＞ ± × ÷ ≠ ≤ ≥ ∞ ∴ ♂ ♀ ∠ ⊥ ⌒ ∂ ∇ ≡ ≒ ≪ ≫ √ ∽ ∝ ∵ ∫ ∬ ' +
+    '∈ ∋ ⊆ ⊇ ⊂ ⊃ ∪ ∩ ∧ ∨ ￢ ⇒ ⇔ ∀ ∃ ∮ ∑ ∏'
+  )},
+  { key: 'ㄹ', name: '단위', chars: list(
+    '＄ ％ ￦ Ｆ ′ ″ ℃ Å ￠ ￡ ￥ ¤ ℉ ‰ € ' +
+    '㎕ ㎖ ㎗ ℓ ㎘ ㏄ ㎣ ㎤ ㎥ ㎦ ㎙ ㎚ ㎛ ㎜ ㎝ ㎞ ㎟ ㎠ ㎡ ㎢ ㏊ ㎍ ㎎ ㎏ ㏏ ㎈ ㎉ ㏈ ㎧ ㎨ ' +
+    '㎰ ㎱ ㎲ ㎳ ㎴ ㎵ ㎶ ㎷ ㎸ ㎹ ㎀ ㎁ ㎂ ㎃ ㎄ ㎺ ㎻ ㎼ ㎽ ㎾ ㎿ ㎐ ㎑ ㎒ ㎓ ㎔ Ω ㏀ ㏁ ㎊ ㎋ ㎌ ' +
+    '㏖ ㏅ ㎭ ㎮ ㎯ ㏛ ㎩ ㎪ ㎫ ㎬ ㏝ ㏐ ㏓ ㏃ ㏉ ㏜ ㏆'
+  )},
+  { key: 'ㅁ', name: '도형 · 기타 기호', chars: list(
+    '＃ ＆ ＊ ＠ § ※ ☆ ★ ○ ● ◎ ◇ ◆ □ ■ △ ▲ ▽ ▼ → ← ↑ ↓ ↔ 〓 ' +
+    '◁ ◀ ▷ ▶ ♤ ♠ ♡ ♥ ♧ ♣ ⊙ ◈ ▣ ◐ ◑ ▒ ▤ ▥ ▨ ▧ ▦ ▩ ♨ ☏ ☎ ☜ ☞ ¶ † ‡ ' +
+    '↕ ↗ ↙ ↖ ↘ ♭ ♩ ♪ ♬ ㉿ ㈜ № ㏇ ™ ㏂ ㏘ ℡ ®'
+  )},
+  { key: 'ㅂ', name: '괘선', chars: list(
+    '─ │ ┌ ┐ ┘ └ ├ ┬ ┤ ┴ ┼ ━ ┃ ┏ ┓ ┛ ┗ ┣ ┳ ┫ ┻ ╋ ┠ ┯ ┨ ┷ ┿ ┝ ┰ ┥ ┸ ╂ ' +
+    '┒ ┑ ┚ ┙ ┖ ┕ ┎ ┍ ┞ ┟ ┡ ┢ ┦ ┧ ┩ ┪ ┭ ┮ ┱ ┲ ┵ ┶ ┹ ┺ ┽ ┾ ╀ ╁ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊'
+  )},
+  { key: 'ㅅ', name: '한글 원 · 괄호 문자', chars: range([0x3260, 0x327B], [0x3200, 0x321B]) },
+  { key: 'ㅇ', name: '영문 · 숫자 원 · 괄호 문자', chars: range(
+    [0x24D0, 0x24E9], [0x2460, 0x246E], [0x249C, 0x24B5], [0x2474, 0x2482]
+  )},
+  { key: 'ㅈ', name: '숫자 · 로마 숫자', chars: range([0xFF10, 0xFF19], [0x2170, 0x2179], [0x2160, 0x2169]) },
+  { key: 'ㅊ', name: '분수 · 첨자', chars: list('½ ⅓ ⅔ ¼ ¾ ⅛ ⅜ ⅝ ⅞ ¹ ² ³ ⁴ ⁿ ₁ ₂ ₃ ₄') },
+  { key: 'ㅋ', name: '현대 한글 자모', chars: range([0x3131, 0x3163]) },
+  { key: 'ㅌ', name: '옛 한글 자모', chars: range([0x3165, 0x318E]) },
+  { key: 'ㅍ', name: '전각 영문', chars: range([0xFF21, 0xFF3A], [0xFF41, 0xFF5A]) },
+  { key: 'ㅎ', name: '그리스 문자', chars: range([0x0391, 0x03A1], [0x03A3, 0x03A9], [0x03B1, 0x03C1], [0x03C3, 0x03C9]) },
+  { key: 'ㄲ', name: '라틴 확장 문자', chars: list(
+    'Æ Ð ª Ħ Ĳ Ŀ Ł Ø Œ º Þ Ŧ Ŋ æ đ ð ħ ı ĳ ĸ ŀ ł ø œ ß þ ŧ ŋ ŉ'
+  )},
+  { key: 'ㄸ', name: '히라가나', chars: range([0x3041, 0x3093]) },
+  { key: 'ㅃ', name: '가타카나', chars: range([0x30A1, 0x30F6]) },
+  { key: 'ㅆ', name: '키릴 문자', chars: range(
+    [0x0410, 0x0415], [0x0401, 0x0401], [0x0416, 0x042F],
+    [0x0430, 0x0435], [0x0451, 0x0451], [0x0436, 0x044F]
+  )}
+];
+
+// 화면에 보이지 않는 문자는 이름으로 표시
+const LABELS = { [SOFT_HYPHEN]: 'SHY' };
+
+const toolbarEl = document.getElementById('toolbar');
+const groupsEl = document.getElementById('groups');
+const statusEl = document.getElementById('status');
+
+const codeOf = ch => 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+
+for (const group of GROUPS) {
+  const id = 'g-' + group.key;
+
+  const link = document.createElement('a');
+  link.href = '#' + id;
+  link.textContent = group.key;
+  link.title = group.name;
+  toolbarEl.appendChild(link);
+
+  const section = document.createElement('section');
+  section.className = 'column';
+  section.id = id;
+
+  const h2 = document.createElement('h2');
+  h2.innerHTML = `<span class="key"></span><span class="name"></span><span class="count"></span>`;
+  h2.querySelector('.key').textContent = group.key + ' + 한자';
+  h2.querySelector('.name').textContent = group.name;
+  h2.querySelector('.count').textContent = `${group.chars.length}자`;
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  for (const ch of group.chars) {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'cell';
+    cell.dataset.char = ch;
+    cell.title = codeOf(ch);
+    if (LABELS[ch]) {
+      cell.classList.add('label');
+      cell.textContent = LABELS[ch];
+    } else {
+      cell.textContent = ch;
+    }
+    grid.appendChild(cell);
+  }
+  section.appendChild(grid);
+  groupsEl.appendChild(section);
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (err) {
+    const temp = document.createElement('textarea');
+    temp.value = text;
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand('copy');
+    temp.remove();
+  }
+}
+
+let statusTimer;
+groupsEl.addEventListener('click', async (e) => {
+  const cell = e.target.closest('.cell');
+  if (!cell) return;
+
+  const ch = cell.dataset.char;
+  await copyText(ch);
+
+  cell.classList.add('copied');
+  setTimeout(() => cell.classList.remove('copied'), 600);
+
+  statusEl.textContent = `복사됨: ${LABELS[ch] || ch} (${codeOf(ch)})`;
+  statusEl.classList.add('show');
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => statusEl.classList.remove('show'), 1200);
+});
+</script>
+
+</body>
+</html>

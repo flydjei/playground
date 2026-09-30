@@ -6,6 +6,7 @@
 
 - 🧮 [ip-subnet-calculator.html](https://flydjei.github.io/playground/ip-subnet-calculator.html) — IP 서브넷 계산기
 - 🧹 [ip-extractor.html](https://flydjei.github.io/playground/ip-extractor.html) — IP 추출기
+- 🔣 [special-characters.html](https://flydjei.github.io/playground/special-characters.html) — 한글 자음 + 한자 특수문자표
 - 🗄️ [rackmanager/](https://flydjei.github.io/playground/rackmanager/) — IDC 랙 자원 관리 프로토타입
 
 ### rackmanager/
