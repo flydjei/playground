@@ -216,7 +216,7 @@
       placeholder="1.234.78.200_순수관제&#10;192.168.0.2_텍스트&#10;텍스트으으으&#10;서버 10.0.0.1, 10.0.0.2 점검"></textarea>
     <div class="options">
       <label><input type="checkbox" id="collectMode"> IP만 모아보기 (한 줄의 여러 IP 모두 추출)</label>
-      <label id="dedupeLabel" class="disabled"><input type="checkbox" id="dedupe" checked disabled> 중복 제거 및 정렬</label>
+      <label id="dedupeLabel" class="disabled"><input type="checkbox" id="dedupe" disabled> 중복 제거 및 정렬</label>
       <label><input type="checkbox" id="keepCidr"> CIDR 표기(/24) 유지</label>
     </div>
     <div class="actions">
@@ -292,9 +292,14 @@ function updateInputCount() {
   inputCountEl.textContent = `${fmt(splitLines(inputEl.value).length)}줄`;
 }
 
+// "중복 제거 및 정렬"은 모아보기 모드에서만 동작하므로, 꺼져 있을 때는 비활성 + 체크 해제로 표시
+// 모아보기를 다시 켜면 사용자가 마지막으로 고른 값(처음엔 체크)을 복원
+let dedupePreference = true;
+
 function syncOptions() {
   const collect = collectModeEl.checked;
   dedupeEl.disabled = !collect;
+  dedupeEl.checked = collect && dedupePreference;
   dedupeLabel.classList.toggle('disabled', !collect);
 }
 
@@ -351,6 +356,7 @@ function flash(btn, text) {
 
 extractBtn.addEventListener('click', extract);
 collectModeEl.addEventListener('change', syncOptions);
+dedupeEl.addEventListener('change', () => { dedupePreference = dedupeEl.checked; });
 
 inputEl.addEventListener('input', updateInputCount);
 inputEl.addEventListener('keydown', (e) => {
