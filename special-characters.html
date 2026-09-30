@@ -37,9 +37,8 @@
     background: #f4f5f7;
   }
   .toolbar a {
-    min-width: 34px;
     padding: 6px 10px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     text-align: center;
     text-decoration: none;
@@ -55,20 +54,16 @@
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 20px;
-    scroll-margin-top: 64px;
+    scroll-margin-top: calc(var(--toolbar-h, 56px) + 8px);
   }
   .column h2 {
     display: flex;
     align-items: baseline;
     gap: 8px;
-    font-size: 14px;
+    font-size: 16px;
     margin: 0 0 10px;
     color: #444;
     font-weight: 600;
-  }
-  .column h2 .key {
-    font-size: 18px;
-    color: #4a7dfc;
   }
   .column h2 .count {
     margin-left: auto;
@@ -122,6 +117,8 @@
 
   @media (max-width: 600px) {
     body { padding: 16px; }
+    .toolbar { flex-wrap: nowrap; overflow-x: auto; }
+    .toolbar a { flex: none; white-space: nowrap; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); }
     .cell { font-size: 18px; }
   }
@@ -225,8 +222,8 @@ for (const group of GROUPS) {
 
   const link = document.createElement('a');
   link.href = '#' + id;
-  link.textContent = group.key;
-  link.title = group.name;
+  link.textContent = group.name;
+  link.title = group.key + ' + 한자';
   toolbarEl.appendChild(link);
 
   const section = document.createElement('section');
@@ -234,8 +231,7 @@ for (const group of GROUPS) {
   section.id = id;
 
   const h2 = document.createElement('h2');
-  h2.innerHTML = `<span class="key"></span><span class="name"></span><span class="count"></span>`;
-  h2.querySelector('.key').textContent = group.key + ' + 한자';
+  h2.innerHTML = `<span class="name"></span><span class="count"></span>`;
   h2.querySelector('.name').textContent = group.name;
   h2.querySelector('.count').textContent = `${group.chars.length}자`;
   section.appendChild(h2);
@@ -259,6 +255,13 @@ for (const group of GROUPS) {
   section.appendChild(grid);
   groupsEl.appendChild(section);
 }
+
+// 바로가기 메뉴가 여러 줄로 감겨도 섹션 제목이 메뉴에 가려지지 않도록 높이를 반영
+function syncToolbarHeight() {
+  document.documentElement.style.setProperty('--toolbar-h', toolbarEl.offsetHeight + 'px');
+}
+syncToolbarHeight();
+window.addEventListener('resize', syncToolbarHeight);
 
 async function copyText(text) {
   try {
