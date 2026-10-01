@@ -71,6 +71,10 @@
     { id: 'rk-jeju01',roomId: 'rm-jeju-1f', name: 'JEJU-C-01',row: 'A열',sizeU: 42, notes: 'DR 사이트' }
   ];
 
+  // 랙별 전력 계약 용량(kW) — 고밀도 존(GN-B)은 12kW
+  const RACK_POWER = { 'rk-gna01': 8, 'rk-gna02': 8, 'rk-gna03': 6, 'rk-gnb01': 12, 'rk-gnb02': 12, 'rk-jj01': 6, 'rk-jj02': 4, 'rk-jeju01': 6 };
+  racks.forEach((r) => { r.powerKw = RACK_POWER[r.id] || 6; });
+
   /* --- 하드웨어 모델 ----------------------------------------------------- */
   const hardware = [
     { id: 'hw-r640',   manufacturerId: 'org-dell',    name: 'PowerEdge R640',        sizeU: 1, notes: '1U 2소켓 범용 서버' },
@@ -89,6 +93,14 @@
     { id: 'hw-fg600f', manufacturerId: 'org-forti',   name: 'FortiGate 600F',        sizeU: 1, notes: '' },
     { id: 'hw-srt5k',  manufacturerId: 'org-apc',     name: 'Smart-UPS SRT 5000VA',  sizeU: 4, notes: '랙마운트 UPS' }
   ];
+
+  // 모델별 평균 소비전력(W) — 랙 전력 사용률 계산에 사용. UPS는 공급 설비라 0W로 계산
+  const HW_POWER = {
+    'hw-r640': 450, 'hw-r740': 750, 'hw-r750': 800, 'hw-r940': 1600, 'hw-dl360': 500, 'hw-dl380': 800,
+    'hw-6029p': 900, 'hw-c9300': 400, 'hw-n9336': 450, 'hw-ex4300': 250, 'hw-fas2750': 700,
+    'hw-rs3621': 300, 'hw-bigip': 400, 'hw-fg600f': 250, 'hw-srt5k': 0
+  };
+  hardware.forEach((h) => { h.powerW = HW_POWER[h.id] || 0; });
 
   /* --- 운영체제 --------------------------------------------------------- */
   const operatingSystems = [
@@ -182,7 +194,7 @@
     ['skapp01',    'dm-sky',   'rk-gna03', 37, 'hw-dl380',   'os-u2204',  'org-sky',   'ro-was',    'sl-silver'],
     ['skdb01',     'dm-sky',   'rk-gna03', 35, 'hw-r750',    'os-rocky9', 'org-sky',   'ro-db',     'sl-gold'],
     ['sktrk01',    'dm-sky',   'rk-gna03', 33, 'hw-r640',    'os-c7',     'org-sky',   'ro-batch',  'sl-bronze', { notes: 'CentOS 7 EOL — 교체 계획 수립 중' }],
-    ['sktrk02',    'dm-sky',   'rk-gna03', 32, 'hw-r640',    'os-c7',     'org-sky',   'ro-batch',  'sl-bronze', { inService: false, monitored: false, notes: 'RMA 진행 중 (메인보드 교체)' }],
+    ['sktrk02',    'dm-sky',   'rk-gna03', 32, 'hw-r640',    'os-c7',     'org-sky',   'ro-batch',  'sl-bronze', { status: 'rma', monitored: false, notes: 'RMA 진행 중 (메인보드 교체)' }],
     ['ups-gna-03', 'dm-gabia', 'rk-gna03',  1, 'hw-srt5k',   'os-none',   'org-infra', 'ro-power',  'sl-silver'],
 
     // ---- GN-B-01 : 미르게임즈
@@ -203,12 +215,12 @@
     ['sw-gnb-02',  'dm-gabia', 'rk-gnb02', 42, 'hw-c9300',   'os-iosxe',  'org-infra', 'ro-switch', 'sl-silver'],
     ['chweb01',    'dm-core',  'rk-gnb02', 40, 'hw-r640',    'os-ws2019', 'org-core',  'ro-web',    'sl-silver'],
     ['chdb01',     'dm-core',  'rk-gnb02', 38, 'hw-r750',    'os-ws2022', 'org-core',  'ro-db',     'sl-gold'],
-    ['chnas01',    'dm-core',  'rk-gnb02', 36, 'hw-rs3621',  'os-dsm',    'org-core',  'ro-storage','sl-silver'],
+    ['chnas01',    'dm-core',  'rk-gnb02', 36, 'hw-rs3621',  'os-dsm',    'org-core',  'ro-storage','sl-silver', { status: 'staging', notes: '증설 구축 중 — 2026-10 오픈 예정' }],
 
     // ---- JJ-2F-01 : 사내 인프라
     ['sw-jj-01',   'dm-gabia', 'rk-jj01',  42, 'hw-n9336',   'os-nxos',   'org-infra', 'ro-switch', 'sl-gold'],
     ['sw-jj-02',   'dm-gabia', 'rk-jj01',  41, 'hw-ex4300',  'os-junos',  'org-infra', 'ro-switch', 'sl-gold'],
-    ['mon1',       'dm-gabia', 'rk-jj01',  39, 'hw-r640',    'os-u2204',  'org-infra', 'ro-mon',    'sl-silver', { inService: false, notes: '2026-07-30 하드웨어 점검을 위해 서비스 중지' }],
+    ['mon1',       'dm-gabia', 'rk-jj01',  39, 'hw-r640',    'os-u2204',  'org-infra', 'ro-mon',    'sl-silver', { status: 'maintenance', notes: '2026-07-30 하드웨어 점검을 위해 서비스 중지' }],
     ['logcol01',   'dm-gabia', 'rk-jj01',  37, 'hw-dl380',   'os-u2204',  'org-infra', 'ro-log',    'sl-gold'],
     ['dns01',      'dm-gabia', 'rk-jj01',  36, 'hw-r640',    'os-u2204',  'org-infra', 'ro-dns',    'sl-gold'],
     ['dns02',      'dm-gabia', 'rk-jj01',  35, 'hw-r640',    'os-u2204',  'org-infra', 'ro-dns',    'sl-gold'],
@@ -218,7 +230,7 @@
 
     // ---- JJ-2F-02 : 예비
     ['sw-jj-03',   'dm-gabia', 'rk-jj02',  42, 'hw-c9300',   'os-iosxe',  'org-infra', 'ro-switch', 'sl-bronze'],
-    ['spare-01',   'dm-none',  'rk-jj02',  40, 'hw-r740',    'os-none',   'org-infra', 'ro-spare',  'sl-dev',    { inService: false, monitored: false, notes: '미배정 예비 장비' }],
+    ['spare-01',   'dm-none',  'rk-jj02',  40, 'hw-r740',    'os-none',   'org-infra', 'ro-spare',  'sl-dev',    { status: 'stock', monitored: false, notes: '미배정 예비 장비' }],
 
     // ---- JEJU-C-01 : DR
     ['sw-jeju-01', 'dm-gabia', 'rk-jeju01',42, 'hw-n9336',   'os-nxos',   'org-infra', 'ro-switch', 'sl-gold'],
@@ -229,6 +241,8 @@
   ];
 
   const EDITORS = ['rackmanager', 'jhkim', 'ryan', 'sypark', 'dwlee'];
+  // 고객사별 기본 담당 엔지니어
+  const OWNERS = { 'org-next': '김정훈', 'org-hanbit': '박서연', 'org-sky': '이도윤', 'org-mir': '최민재', 'org-core': '박서연', 'org-infra': '인프라운영팀' };
   const PURCHASE_YEARS = ['2021-11-02', '2022-05-17', '2023-02-09', '2023-08-24', '2024-01-15',
                           '2024-06-30', '2024-11-11', '2025-03-05', '2025-09-19', '2026-01-22'];
 
@@ -257,8 +271,10 @@
       assetNo: extra.asset || 'AST-' + purchased.slice(0, 4) + '-' + String(int(100, 999) * 1 + i).padStart(4, '0'),
       purchased: purchased,
       warrantyEnd: extra.warranty || addYears(purchased, warrantyYears),
-      inService: extra.inService !== undefined ? extra.inService : true,
-      monitored: extra.monitored !== undefined ? extra.monitored : (extra.inService === false ? false : true),
+      status: extra.status || 'active',
+      inService: !extra.status || extra.status === 'active',
+      monitored: extra.monitored !== undefined ? extra.monitored : (extra.status && extra.status !== 'active' ? false : true),
+      owner: OWNERS[customerId] || '',
       notes: extra.notes || '',
       updatedBy: pick(EDITORS),
       updatedAt: '2026-0' + int(1, 7) + '-' + String(int(10, 28)) + ' ' + String(int(9, 18)).padStart(2, '0') + ':' + String(int(0, 59)).padStart(2, '0'),
@@ -293,22 +309,125 @@
     link('app-match',  ['mggame01', 'mggame02', 'mggame03', 'mggame04', 'mggame05', 'mggame06', 'mgcache01'])
   ).filter((l) => l.deviceId);
 
+
+  /* --- IPAM: VLAN / 서브넷 / IP 주소 ------------------------------------- */
+  const IP = global.RM_IP;
+
+  const vlans = [
+    { id: 'vl-gn-10',   vid: 10,  name: 'GN-MGMT',        buildingId: 'b-gn',   notes: '강남 장비 관리망' },
+    { id: 'vl-gn-11',   vid: 11,  name: 'GN-OOB',         buildingId: 'b-gn',   notes: '강남 IPMI/iDRAC/iLO 대역' },
+    { id: 'vl-gn-101',  vid: 101, name: 'NEXT-SVC',       buildingId: 'b-gn',   notes: '넥스트커머스 서비스망' },
+    { id: 'vl-gn-201',  vid: 201, name: 'HANBIT-PRIV',    buildingId: 'b-gn',   notes: '한빛금융 내부망 (망분리)' },
+    { id: 'vl-gn-301',  vid: 301, name: 'SKY-SVC',        buildingId: 'b-gn',   notes: '' },
+    { id: 'vl-gn-401',  vid: 401, name: 'MIR-SVC',        buildingId: 'b-gn',   notes: '' },
+    { id: 'vl-gn-501',  vid: 501, name: 'CORE-SVC',       buildingId: 'b-gn',   notes: '' },
+    { id: 'vl-jj-10',   vid: 10,  name: 'JJ-MGMT',        buildingId: 'b-jj',   notes: '' },
+    { id: 'vl-jj-11',   vid: 11,  name: 'JJ-OOB',         buildingId: 'b-jj',   notes: '' },
+    { id: 'vl-jj-100',  vid: 100, name: 'INFRA-SVC',      buildingId: 'b-jj',   notes: '사내 공용 서비스' },
+    { id: 'vl-jeju-10', vid: 10,  name: 'JEJU-MGMT',      buildingId: 'b-jeju', notes: '' },
+    { id: 'vl-jeju-11', vid: 11,  name: 'JEJU-OOB',       buildingId: 'b-jeju', notes: '' },
+    { id: 'vl-jeju-900',vid: 900, name: 'DR-REPL',        buildingId: 'b-jeju', notes: 'DR 복제 전용' }
+  ];
+
+  // purpose: svc(서비스) · mgmt(관리) · oob(IPMI/OOB) · dr(DR/복제)
+  const subnets = [
+    { id: 'sn-gn-mgmt',  cidr: '10.10.0.0/24',     name: '강남 관리망',        vlanId: 'vl-gn-10',   buildingId: 'b-gn',   customerId: 'org-infra',  purpose: 'mgmt', gateway: '10.10.0.1',     notes: '.200–.209 DHCP 풀 (작업용 노트북)' },
+    { id: 'sn-gn-oob',   cidr: '10.11.0.0/24',     name: '강남 OOB',           vlanId: 'vl-gn-11',   buildingId: 'b-gn',   customerId: 'org-infra',  purpose: 'oob',  gateway: '10.11.0.1',     notes: '' },
+    { id: 'sn-next',     cidr: '203.0.113.0/26',   name: '넥스트커머스 서비스', vlanId: 'vl-gn-101',  buildingId: 'b-gn',   customerId: 'org-next',   purpose: 'svc',  gateway: '203.0.113.1',   notes: '공인 /26 · VIP 포함' },
+    { id: 'sn-hanbit',   cidr: '172.16.10.0/24',   name: '한빛금융 내부망',     vlanId: 'vl-gn-201',  buildingId: 'b-gn',   customerId: 'org-hanbit', purpose: 'svc',  gateway: '172.16.10.1',   notes: '외부 라우팅 없음' },
+    { id: 'sn-sky',      cidr: '203.0.113.64/27',  name: '스카이로지스 서비스', vlanId: 'vl-gn-301',  buildingId: 'b-gn',   customerId: 'org-sky',    purpose: 'svc',  gateway: '203.0.113.65',  notes: '' },
+    { id: 'sn-mir',      cidr: '198.51.100.0/25',  name: '미르게임즈 서비스',   vlanId: 'vl-gn-401',  buildingId: 'b-gn',   customerId: 'org-mir',    purpose: 'svc',  gateway: '198.51.100.1',  notes: '이벤트 기간 증설 대비 여유 확보' },
+    { id: 'sn-core',     cidr: '203.0.113.96/29',  name: '코어헬스 서비스',     vlanId: 'vl-gn-501',  buildingId: 'b-gn',   customerId: 'org-core',   purpose: 'svc',  gateway: '203.0.113.97',  notes: '/29 — 증설 시 재할당 필요' },
+    { id: 'sn-jj-mgmt',  cidr: '10.20.0.0/24',     name: '죽전 관리망',        vlanId: 'vl-jj-10',   buildingId: 'b-jj',   customerId: 'org-infra',  purpose: 'mgmt', gateway: '10.20.0.1',     notes: '' },
+    { id: 'sn-jj-oob',   cidr: '10.21.0.0/24',     name: '죽전 OOB',           vlanId: 'vl-jj-11',   buildingId: 'b-jj',   customerId: 'org-infra',  purpose: 'oob',  gateway: '10.21.0.1',     notes: '' },
+    { id: 'sn-infra',    cidr: '192.0.2.0/26',     name: '사내 공용 서비스',    vlanId: 'vl-jj-100',  buildingId: 'b-jj',   customerId: 'org-infra',  purpose: 'svc',  gateway: '192.0.2.1',     notes: 'DNS · 메일 · 로그' },
+    { id: 'sn-jeju-mgmt',cidr: '10.30.0.0/24',     name: '제주 관리망',        vlanId: 'vl-jeju-10', buildingId: 'b-jeju', customerId: 'org-infra',  purpose: 'mgmt', gateway: '10.30.0.1',     notes: '' },
+    { id: 'sn-jeju-oob', cidr: '10.31.0.0/24',     name: '제주 OOB',           vlanId: 'vl-jeju-11', buildingId: 'b-jeju', customerId: 'org-infra',  purpose: 'oob',  gateway: '10.31.0.1',     notes: '' },
+    { id: 'sn-dr',       cidr: '10.40.0.0/24',     name: 'DR 복제망',          vlanId: 'vl-jeju-900',buildingId: 'b-jeju', customerId: 'org-infra',  purpose: 'dr',   gateway: '10.40.0.1',     notes: '강남 ↔ 제주 스토리지 복제' }
+  ];
+
+  const ipAddresses = [];
+  let ipSeq = 0;
+  const cursor = {};          // 서브넷별 다음 할당 위치
+  const addIp = (subnetId, address, rec) => {
+    ipAddresses.push(Object.assign({ id: 'ip-' + (++ipSeq), address: address, subnetId: subnetId,
+      deviceId: '', iface: '', type: 'primary', status: 'assigned', notes: '' }, rec));
+  };
+  const takeIp = (subnetId) => {
+    const net = IP.parseCidr(subnets.find((s) => s.id === subnetId).cidr);
+    // 큰 대역은 앞쪽 10개를 인프라용으로 비워 두고, 작은 대역은 게이트웨이 바로 뒤부터 사용
+    if (cursor[subnetId] == null) cursor[subnetId] = net.first + (net.usable >= 30 ? 10 : 2);
+    return IP.fromInt(cursor[subnetId]++);
+  };
+
+  // 게이트웨이는 예약 주소로 등록
+  subnets.forEach((s) => addIp(s.id, s.gateway, { type: 'gateway', status: 'reserved', notes: '기본 게이트웨이' }));
+  // 강남 관리망 DHCP 풀
+  for (let i = 200; i <= 209; i++) addIp('sn-gn-mgmt', '10.10.0.' + i, { type: 'dhcp', status: 'dhcp', notes: 'DHCP 풀' });
+  // 미래 증설용 예약
+  addIp('sn-mir', '198.51.100.100', { type: 'primary', status: 'reserved', notes: '이벤트 증설 예약 (mggame07)' });
+  addIp('sn-mir', '198.51.100.101', { type: 'primary', status: 'reserved', notes: '이벤트 증설 예약 (mggame08)' });
+
+  const BLD = { 'rk-gna01': 'gn', 'rk-gna02': 'gn', 'rk-gna03': 'gn', 'rk-gnb01': 'gn', 'rk-gnb02': 'gn', 'rk-jj01': 'jj', 'rk-jj02': 'jj', 'rk-jeju01': 'jeju' };
+  const SVC_BY_CUSTOMER = { 'org-next': 'sn-next', 'org-hanbit': 'sn-hanbit', 'org-sky': 'sn-sky', 'org-mir': 'sn-mir', 'org-core': 'sn-core' };
+  const NET_ROLES = ['ro-switch', 'ro-fw', 'ro-lb', 'ro-power'];
+  const BMC_MAKERS = ['org-dell', 'org-hpe', 'org-smc'];
+
+  devices.forEach((d) => {
+    if (d.status === 'stock') return;                       // 예비 장비는 IP 미할당
+    const b = BLD[d.rackId];
+    const hw = hardware.find((h) => h.id === d.hardwareId);
+    if (NET_ROLES.includes(d.roleId) && d.customerId === 'org-infra') {
+      addIp('sn-' + b + '-mgmt', takeIp('sn-' + b + '-mgmt'), { deviceId: d.id, iface: d.roleId === 'ro-power' ? 'nmc' : 'mgmt0', type: 'mgmt' });
+      return;
+    }
+    const svc = SVC_BY_CUSTOMER[d.customerId] || (b === 'jeju' ? 'sn-dr' : 'sn-infra');
+    if (d.name === 'skweb02') {
+      // 데모: 현장에서 수기로 입력하다 생긴 IP 충돌
+      addIp(svc, '203.0.113.75', { deviceId: d.id, iface: 'eth0', type: 'primary', notes: '실사 결과 skweb01과 중복 — 확인 필요' });
+    } else if (d.status !== 'rma') {
+      addIp(svc, takeIp(svc), { deviceId: d.id, iface: d.roleId === 'ro-lb' ? 'external' : 'eth0', type: 'primary' });
+    }
+    if (d.roleId === 'ro-lb') {
+      addIp(svc, takeIp(svc), { deviceId: d.id, iface: 'vs-https', type: 'vip', notes: '서비스 VIP (443)' });
+    }
+    if (hw && BMC_MAKERS.includes(hw.manufacturerId) && d.name !== 'chweb01') {
+      addIp('sn-' + b + '-oob', takeIp('sn-' + b + '-oob'), { deviceId: d.id, iface: 'bmc', type: 'ipmi' });
+    }
+  });
+
+  /* --- 변경 이력 (활동 로그) -------------------------------------------- */
+  const changeLog = devices
+    .map((d) => ({ id: 'log-' + d.id, at: d.updatedAt, user: d.updatedBy, entity: 'device', entityId: d.id,
+                   action: 'update', summary: d.name + ' 장비 정보 수정' }))
+    .concat([
+      { id: 'log-ip-1',  at: '2026-07-21 10:12', user: 'sypark', entity: 'ip', entityId: '', action: 'create', summary: '198.51.100.100–101 이벤트 증설용 예약' },
+      { id: 'log-sn-1',  at: '2026-06-02 15:40', user: 'ryan',   entity: 'subnet', entityId: 'sn-core', action: 'create', summary: '203.0.113.96/29 코어헬스 서비스 서브넷 생성' },
+      { id: 'log-dev-1', at: '2026-07-30 09:05', user: 'jhkim',  entity: 'device', entityId: byName['mon1'], action: 'update', summary: 'mon1 상태: 운영 → 점검 중' }
+    ])
+    .sort((a, b) => (a.at < b.at ? 1 : -1));
+
   /* --- 시스템 정보 ------------------------------------------------------- */
   const system = {
-    appVersion: '1.2.5',
-    build: 'prototype (static / no database)',
-    dbEngine: '없음 — 브라우저 메모리',
-    dbSchema: '10',
+    appVersion: '2.0.0',
+    baseVersion: '1.2.5',
+    build: 'prototype (static / localStorage)',
+    dbEngine: '브라우저 localStorage (자동 저장)',
+    dbSchema: '11',
     plugins: [
       { name: 'DNS', enabled: true,  notes: '장비 이름 + 도메인으로 조회 링크 제공' },
       { name: 'Excel Export', enabled: true, notes: '표 형태 화면을 CSV(UTF-8 BOM)로 내려받기' },
-      { name: 'Dell Warranty', enabled: true, notes: '서비스 태그로 보증 정보 조회 링크' }
+      { name: 'Dell Warranty', enabled: true, notes: '서비스 태그로 보증 정보 조회 링크' },
+      { name: 'IPAM', enabled: true, notes: '서브넷 · VLAN · IP 주소 관리, 충돌/사용률 점검' },
+      { name: 'Power', enabled: true, notes: '하드웨어 소비전력 기반 랙 전력 사용률 계산' },
+      { name: 'Audit Log', enabled: true, notes: '추가·수정·삭제 변경 이력 기록' }
     ],
     licence: 'GNU General Public Licence v2 (원본 RackManager 기준)'
   };
 
   global.RM_DATA = {
     buildings, rooms, racks, hardware, operatingSystems, organisations,
-    roles, serviceLevels, domains, devices, apps, appDevices, system
+    roles, serviceLevels, domains, devices, apps, appDevices,
+    vlans, subnets, ipAddresses, changeLog, system
   };
 })(window);
