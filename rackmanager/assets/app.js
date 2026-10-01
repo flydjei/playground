@@ -1395,7 +1395,9 @@
     const ipTotal = sns.reduce((n, x) => n + x.st.total, 0);
     const ipUsed = sns.reduce((n, x) => n + x.st.used, 0);
     const alerts = collectAlerts();
-    const byStatus = STATUS_ORDER.map((k) => ({ key: DEVICE_STATUS[k].label, n: devs.filter((d) => d.status === k).length })).filter((x) => x.n);
+    // barList는 첫 행을 최댓값으로 쓰므로 많은 순으로 정렬
+    const byStatus = STATUS_ORDER.map((k) => ({ key: DEVICE_STATUS[k].label, n: devs.filter((d) => d.status === k).length }))
+      .filter((x) => x.n).sort((a, b) => b.n - a.n);
     const topSubnets = sns.slice().sort((a, b) => b.st.pct - a.st.pct).slice(0, 6);
     const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 
@@ -2059,6 +2061,9 @@
       if (err) { toast(err); return false; }
       if (isNew && v.ipSubnetId && !nextFreeIp(L.subnet(v.ipSubnetId))) { toast('선택한 서브넷에 남은 주소가 없습니다.'); return false; }
       if (isNew && v.ipmiSubnetId && !nextFreeIp(L.subnet(v.ipmiSubnetId))) { toast('IPMI 서브넷에 남은 주소가 없습니다.'); return false; }
+      if (isNew && v.ipSubnetId && v.ipSubnetId === v.ipmiSubnetId && subnetStats(L.subnet(v.ipSubnetId)).free < 2) {
+        toast('서비스 IP와 IPMI를 같은 서브넷에 할당하려면 빈 주소가 2개 이상 필요합니다.'); return false;
+      }
       const ipSubnetId = v.ipSubnetId, ipmiSubnetId = v.ipmiSubnetId;
       delete v.ipSubnetId; delete v.ipmiSubnetId;
       v.inService = v.status === 'active';
@@ -2073,8 +2078,9 @@
           got.push(allocateIp(ipSubnetId, rec.id, isNet ? 'mgmt' : 'primary', isNet ? 'mgmt0' : 'eth0'));
         }
         if (ipmiSubnetId) got.push(allocateIp(ipmiSubnetId, rec.id, 'ipmi', 'bmc'));
-        logChange('device', rec.id, 'create', `${rec.name} 장비 추가 (${nm(L.rack(rec.rackId))} U${rec.rackPos})${got.length ? ' · IP ' + got.join(', ') : ''}`);
-        toast(`장비 '${v.name}'을(를) 추가했습니다.${got.length ? ' IP ' + got.join(', ') + ' 할당' : ''}`);
+        const ips = got.filter(Boolean);   // 할당에 실패한 항목(빈 문자열)은 제외
+        logChange('device', rec.id, 'create', `${rec.name} 장비 추가 (${nm(L.rack(rec.rackId))} U${rec.rackPos})${ips.length ? ' · IP ' + ips.join(', ') : ''}`);
+        toast(`장비 '${v.name}'을(를) 추가했습니다.${ips.length ? ' IP ' + ips.join(', ') + ' 할당' : ''}`);
       } else {
         const diff = diffSummary(fields, device, v);
         Object.assign(device, v, stamp);
@@ -2332,6 +2338,10 @@
       const gw = IP.toInt(v.gateway);
       if (gw === null || !IP.contains(net, gw) || IP.isReserved(net, gw)) { toast('게이트웨이는 서브넷의 할당 가능 범위 안에 있어야 합니다.'); return false; }
       v.gateway = IP.fromInt(gw);
+      if (sn && v.gateway !== sn.gateway) {
+        const taken = db.ipAddresses.find((i) => i.address === v.gateway);
+        if (taken) { toast(`${v.gateway}는 이미 ${taken.deviceId ? nm(L.device(taken.deviceId)) + '에' : (IP_TYPES[taken.type] || '') + '(으)로'} 등록돼 있어 게이트웨이로 쓸 수 없습니다.`); return false; }
+      }
       if (sn) {
         const outside = subnetIps(sn.id).filter((i) => !IP.contains(net, IP.toInt(i.address)) || IP.isReserved(net, IP.toInt(i.address)));
         if (outside.length) { toast(`등록된 주소 ${outside.length}개(${outside.slice(0, 3).map((i) => i.address).join(', ')})가 새 범위를 벗어납니다.`); return false; }
@@ -2350,7 +2360,7 @@
         Object.assign(sn, v);
         // 게이트웨이 예약 레코드도 함께 이동
         const gwRec = db.ipAddresses.find((i) => i.subnetId === sn.id && i.type === 'gateway' && i.address === oldGw);
-        if (gwRec && oldGw !== sn.gateway && !db.ipAddresses.some((i) => i.address === sn.gateway)) gwRec.address = sn.gateway;
+        if (gwRec && oldGw !== sn.gateway) gwRec.address = sn.gateway;
         if (diff) logChange('subnet', sn.id, 'update', `${sn.cidr} — ${diff}`);
         toast('저장했습니다.');
       }
@@ -2606,6 +2616,7 @@
           f.elements.roomId.value = src.roomId;
           f.elements.row.value = src.row || '';
           f.elements.sizeU.value = src.sizeU;
+          f.elements.powerKw.value = src.powerKw == null ? '' : src.powerKw;
           f.elements.notes.value = src.notes || '';
         }, 0);
         break;
