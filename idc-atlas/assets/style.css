@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RackManager prototype — design tokens
+   IDC Atlas prototype — design tokens
    ========================================================================== */
 :root {
   --bg:            #f4f6f8;
@@ -688,7 +688,7 @@ body.ro .readonly-lock { display: inline-flex; }
 }
 
 /* ==========================================================================
-   Print — RackManager ships dedicated print CSS; reproduced here.
+   Print — 원본 RackManager의 인쇄 전용 CSS를 재현
    ========================================================================== */
 @media print {
   :root { --bg: #fff; --surface: #fff; --surface-2: #fff; --surface-3: #fff; --border: #bbb; --text: #000; --text-2: #333; --text-3: #555; }

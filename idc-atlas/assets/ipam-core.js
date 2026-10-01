@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RackManager — IPv4 주소 계산 유틸리티 (IPAM 코어)
+   IDC Atlas — IPv4 주소 계산 유틸리티 (IPAM 코어)
    --------------------------------------------------------------------------
    DOM에 의존하지 않는 순수 함수만 모아 두었습니다. data.js(샘플 데이터 생성)와
    app.js(화면)에서 함께 사용하며, Node에서도 그대로 불러 테스트할 수 있습니다.
@@ -88,5 +88,5 @@
     return x - y;
   }
 
-  global.RM_IP = { toInt, fromInt, isValid, parseCidr, contains, overlaps, isReserved, nextFree, compare, maskOf };
+  global.ATLAS_IP = { toInt, fromInt, isValid, parseCidr, contains, overlaps, isReserved, nextFree, compare, maskOf };
 })(typeof window !== 'undefined' ? window : globalThis);

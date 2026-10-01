@@ -7,11 +7,11 @@
 - [ip-subnet-calculator.html](https://flydjei.github.io/playground/ip-subnet-calculator.html) — IP 서브넷 계산기
 - [ip-extractor.html](https://flydjei.github.io/playground/ip-extractor.html) — IP 추출기
 - [special-characters.html](https://flydjei.github.io/playground/special-characters.html) — 한글 자음 + 한자 특수문자표
-- [rackmanager/](https://flydjei.github.io/playground/rackmanager/) — IDC 랙 · IP · 장비 통합 관리 프로토타입
+- [idc-atlas/](https://flydjei.github.io/playground/idc-atlas/) — IDC Atlas: IDC 랙 · IP · 장비 통합 관리 프로토타입
 
-### rackmanager/
+### idc-atlas/ — IDC Atlas
 
-오픈소스 IDC 랙 관리 도구(RackManager 1.2.5) 기능을 옮긴 뒤 IP 주소 관리(IPAM)·장비 라이프사이클·전력·변경 이력까지 넓힌 프론트엔드 프로토타입.
+오픈소스 IDC 랙 관리 도구 RackManager 1.2.5의 기능을 옮긴 뒤 IP 주소 관리(IPAM)·장비 라이프사이클·전력·변경 이력까지 넓힌 프론트엔드 프로토타입.
 
 데이터베이스 없이 브라우저에서 동작하며, 변경 내용은 localStorage에 자동 저장됨 (시스템 정보에서 JSON 백업·복원·초기화).
 
@@ -26,6 +26,7 @@
 - **통합 검색** — 장비·IP·서브넷·랙·앱, 미등록 IP를 검색하면 소속 서브넷과 바로 할당 버튼 안내
 - **설정** — 건물·전산실·도메인·하드웨어(크기·소비전력)·OS·조직·역할·서비스 수준 관리 (사용 중인 항목 삭제 방지)
 - 다크 모드, 읽기 전용 모드, 인쇄용 CSS, 모바일 대응
+- 샘플 데이터의 회사·고객사·도메인·주소·담당자는 모두 가상 (도메인은 RFC 2606 예약 TLD `.example`, IP는 사설/문서용 대역)
 
 ---
 

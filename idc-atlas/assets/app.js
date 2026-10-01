@@ -1,6 +1,6 @@
 /* ==========================================================================
-   RackManager prototype — application
-   RackManager 1.2.5 Features / User Guide 문서의 기능 구성을 옮긴 뒤
+   IDC Atlas prototype — application
+   오픈소스 RackManager 1.2.5 Features / User Guide 문서의 기능 구성을 옮긴 뒤
    IP 주소 관리(IPAM) · 장비 라이프사이클 · 전력 · 변경 이력 · 대시보드로
    관리 범위를 넓힌 프론트엔드 전용 프로토타입입니다.
    모든 CRUD는 메모리 배열을 조작하고, 변경 시 localStorage에 자동 저장합니다.
@@ -8,9 +8,10 @@
 (function () {
   'use strict';
 
-  const db = window.RM_DATA;
-  const IP = window.RM_IP;
-  const CURRENT_USER = 'rackmanager';
+  const db = window.ATLAS_DATA;
+  const IP = window.ATLAS_IP;
+  const CURRENT_USER = 'atlas-admin';
+  const THEME_KEY = 'idc-atlas-theme';
 
   /* ======================================================================
      1. 유틸리티
@@ -56,7 +57,8 @@
   /* ======================================================================
      1-1. 영속성 — localStorage 자동 저장 / JSON 백업·복원
      ====================================================================== */
-  const STORE_KEY = 'rm-db';
+  const STORE_KEY = 'idc-atlas-db';
+  const LEGACY_STORE_KEY = 'rm-db';      // 이름 변경 전(RackManager 프로토타입) 저장 키 — 최초 1회 이전
   const SCHEMA = 11;
   const COLLECTIONS = ['buildings', 'rooms', 'racks', 'hardware', 'operatingSystems', 'organisations', 'roles',
                        'serviceLevels', 'domains', 'devices', 'apps', 'appDevices', 'vlans', 'subnets', 'ipAddresses', 'changeLog'];
@@ -67,7 +69,7 @@
   function snapshot() {
     const data = {};
     COLLECTIONS.forEach((k) => { data[k] = db[k]; });
-    return { app: 'RackManager', schema: SCHEMA, savedAt: nowStamp(), data: data };
+    return { app: 'IDC Atlas', schema: SCHEMA, savedAt: nowStamp(), data: data };
   }
 
   function persist() {
@@ -112,7 +114,9 @@
 
   function restore() {
     try {
-      const raw = localStorage.getItem(STORE_KEY);
+      let raw = localStorage.getItem(STORE_KEY);
+      let legacy = false;
+      if (!raw) { raw = localStorage.getItem(LEGACY_STORE_KEY); legacy = !!raw; }
       if (!raw) return;
       const snap = JSON.parse(raw);
       if (!snap || snap.schema !== SCHEMA) return;
@@ -120,6 +124,11 @@
       store.savedAt = snap.savedAt;
       store.bytes = raw.length;
       store.restored = true;
+      if (legacy) {
+        // 새 키로 옮기고 이전 키는 정리
+        localStorage.setItem(STORE_KEY, raw);
+        localStorage.removeItem(LEGACY_STORE_KEY);
+      }
     } catch (err) {
       store.error = '저장된 데이터를 불러오지 못해 초기 데이터로 시작합니다.';
     }
@@ -1731,7 +1740,7 @@
       inUse: (x) => db.devices.some((d) => d.hardwareId === x.id),
       fields: () => [{ k: 'name', label: '모델명', required: true },
                      { k: 'manufacturerId', label: '제조사', type: 'select', options: hwMakers() },
-                     { k: 'sizeU', label: '크기 (U)', type: 'number', min: 1, max: 48, help: 'RackManager는 정수 U만 지원합니다 (1.5U 등은 반올림)' },
+                     { k: 'sizeU', label: '크기 (U)', type: 'number', min: 1, max: 48, help: '정수 U만 지원합니다 (1.5U 등은 반올림)' },
                      { k: 'powerW', label: '평균 소비전력 (W)', type: 'number', min: 0, max: 20000, help: '랙 전력 사용률 계산에 사용됩니다' },
                      { k: 'notes', label: '비고', type: 'textarea', full: true }]
     },
@@ -1780,7 +1789,7 @@
     const sec = CONFIG_SECTIONS[key];
     const rows = sec.list();
 
-    return pageHead('설정', 'RackManager의 기본 구성 요소를 관리합니다. 장비를 등록하기 전에 먼저 채워두면 편합니다.', `
+    return pageHead('설정', 'IDC Atlas의 기본 구성 요소를 관리합니다. 장비를 등록하기 전에 먼저 채워두면 편합니다.', `
       <button class="btn primary mutating" data-action="cfg-add" data-sec="${esc(key)}">＋ ${esc(sec.entity)} 추가</button>
       <a class="btn" href="#/system">시스템 정보</a>
     `) + `
@@ -1803,7 +1812,7 @@
 
   function renderSystem() {
     const s = db.system;
-    return pageHead('시스템 정보', 'RackManager 프로토타입 및 데이터 현황', '', [{ label: '설정', href: '#/config' }, { label: '시스템 정보' }]) + `
+    return pageHead('시스템 정보', 'IDC Atlas 프로토타입 및 데이터 현황', '', [{ label: '설정', href: '#/config' }, { label: '시스템 정보' }]) + `
     <div class="notice">ℹ️ <div>이 화면은 원본 RackManager의 <b>View RackManager System &amp; Database Information</b> 페이지에 대응합니다.
       버그 리포트 시 이 정보를 함께 첨부하면 도움이 됩니다.</div></div>
 
@@ -2000,7 +2009,7 @@
       { k: 'roleId', label: '역할', type: 'select', options: db.roles },
       { k: 'serviceLevelId', label: '서비스 수준', type: 'select', options: db.serviceLevels },
       { k: 'status', label: '라이프사이클 상태', type: 'select', options: statusOptions(), help: "'운영'이 아니면 서비스 중지 장비로 집계됩니다" },
-      { k: 'owner', label: '담당자', placeholder: '예: 김정훈 / 인프라운영팀' },
+      { k: 'owner', label: '담당자', placeholder: '예: 인프라운영팀' },
       { type: 'section', label: '설치 위치' },
       { k: 'rackId', label: '랙', type: 'select', options: db.racks, labeler: (r) => r.name + ' — ' + rackLocation(r) },
       { k: 'rackPos', label: '시작 U 위치', type: 'number', min: 1, max: 60, required: true, help: '장비가 차지하는 가장 아래쪽 U 번호' },
@@ -2052,7 +2061,7 @@
     const isNew = !device;
     const fields = deviceFields().concat(isNew ? deviceIpFields() : []);
     const values = device ? Object.assign({}, device) : Object.assign({
-      name: '', domainId: 'dm-gabia', customerId: customers()[0].id, roleId: 'ro-web', serviceLevelId: 'sl-silver',
+      name: '', domainId: 'dm-infra', customerId: customers()[0].id, roleId: 'ro-web', serviceLevelId: 'sl-silver',
       status: 'active', owner: '',
       rackId: db.racks[0].id, rackPos: 1, hardwareId: 'hw-r640', serial: '', assetNo: '',
       purchased: todayISO(), warrantyEnd: '', osId: 'os-u2204', osLicenceKey: '',
@@ -2103,7 +2112,7 @@
   /* --- 랙 / 앱 폼 -------------------------------------------------------- */
   function openRackForm(rack) {
     const fields = [
-      { k: 'name', label: '랙 이름', required: true, placeholder: '예: GN-A-04' },
+      { k: 'name', label: '랙 이름', required: true, placeholder: '예: AL-A-04' },
       { k: 'roomId', label: '전산실', type: 'select', options: db.rooms, labeler: (r) => nm(L.building(r.buildingId)) + ' · ' + r.name },
       { k: 'row', label: '열(Row)', placeholder: '예: A열', help: '원본 RackManager 1.2.5는 UI에서 행 관리를 지원하지 않습니다' },
       { k: 'sizeU', label: '크기 (U)', type: 'number', min: 1, max: 60, required: true },
@@ -2316,7 +2325,7 @@
   function subnetFields(isNew) {
     return [
       { k: 'cidr', label: '네트워크 (CIDR)', required: true, placeholder: '예: 10.50.0.0/24', help: '호스트 비트가 섞여 있으면 네트워크 주소로 정리합니다' },
-      { k: 'name', label: '이름', required: true, placeholder: '예: 강남 신규 서비스망' },
+      { k: 'name', label: '이름', required: true, placeholder: '예: 알파 신규 서비스망' },
       { k: 'purpose', label: '용도', type: 'select', options: mapOptions(SUBNET_PURPOSE) },
       { k: 'vlanId', label: 'VLAN', type: 'select', options: db.vlans.slice().sort((a, b) => a.vid - b.vid), labeler: (x) => vlanLabel(x) + ' (' + nm(L.building(x.buildingId)) + ')', blank: '(없음)' },
       { k: 'buildingId', label: '위치(건물)', type: 'select', options: db.buildings },
@@ -2383,7 +2392,7 @@
     const isNew = !vl;
     const fields = [
       { k: 'vid', label: 'VLAN ID', type: 'number', min: 1, max: 4094, required: true },
-      { k: 'name', label: '이름', required: true, placeholder: '예: GN-NEW-SVC' },
+      { k: 'name', label: '이름', required: true, placeholder: '예: AL-NEW-SVC' },
       { k: 'buildingId', label: '건물', type: 'select', options: db.buildings, help: 'VLAN ID는 건물(스위칭 도메인)별로 고유해야 합니다' },
       { k: 'notes', label: '비고', type: 'textarea', full: true }
     ];
@@ -2431,7 +2440,7 @@
       if (c.key === 'pos') return r.posLabel + ' (' + r.sizeU + 'U)';
       return c.value(r);
     })));
-    download(`rackmanager-devices-${view}-${todayISO()}.csv`, csv);
+    download(`idc-atlas-devices-${view}-${todayISO()}.csv`, csv);
     toast(`${rows.length}건을 내보냈습니다.`);
   }
 
@@ -2439,14 +2448,14 @@
     const rows = rackRows();
     const csv = toCsv(['랙', '건물', '전산실', '열', '크기(U)', '장비 수', '사용(U)', '여유(U)', '사용률(%)', '비고'],
       rows.map((r) => [r.rack.name, r.building, r.room, r.rack.row, r.rack.sizeU, r.st.devices, r.st.used, r.st.free, r.st.pct, r.rack.notes]));
-    download(`rackmanager-racks-${todayISO()}.csv`, csv);
+    download(`idc-atlas-racks-${todayISO()}.csv`, csv);
     toast(`${rows.length}건을 내보냈습니다.`);
   }
 
   function exportApps() {
     const csv = toCsv(['앱', '연결 장비 수', '장비 목록', '비고'],
       db.apps.map((a) => [a.name, appDeviceList(a.id).length, appDeviceList(a.id).map((d) => d.name).join(' '), a.notes]));
-    download(`rackmanager-apps-${todayISO()}.csv`, csv);
+    download(`idc-atlas-apps-${todayISO()}.csv`, csv);
     toast(`${db.apps.length}건을 내보냈습니다.`);
   }
 
@@ -2455,7 +2464,7 @@
     const csv = toCsv(['서브넷', '이름', 'VLAN', '용도', '위치', '고객사', '게이트웨이', '가용', '사용', '할당', '예약', 'DHCP', '여유', '사용률(%)', '비고'],
       rows.map((r) => [r.s.cidr, r.s.name, r.vlan ? r.vlan.vid : '', SUBNET_PURPOSE[r.s.purpose] || '', nm(L.building(r.s.buildingId)),
                        nm(L.org(r.s.customerId)), r.s.gateway, r.st.total, r.st.used, r.st.assigned, r.st.reserved, r.st.dhcp, r.st.free, r.st.pct, r.s.notes]));
-    download(`rackmanager-subnets-${todayISO()}.csv`, csv);
+    download(`idc-atlas-subnets-${todayISO()}.csv`, csv);
     toast(`${rows.length}건을 내보냈습니다.`);
   }
 
@@ -2464,7 +2473,7 @@
     const csv = toCsv(['주소', '상태', '유형', '장비', '인터페이스', 'DNS 이름', '서브넷', 'VLAN', '충돌', '비고'],
       rows.map((r) => [r.address, (IP_STATUS[r.status] || {}).label || r.status, IP_TYPES[r.type] || r.type, r.device ? r.device.name : '', r.iface,
                        r.device ? fqdn(r.device) : '', r.subnet ? r.subnet.cidr : '', r.vlan ? r.vlan.vid : '', r.conflict ? '충돌' : '', r.notes]));
-    download(`rackmanager-ips-${todayISO()}.csv`, csv);
+    download(`idc-atlas-ips-${todayISO()}.csv`, csv);
     toast(`${rows.length}건을 내보냈습니다.`);
   }
 
@@ -2472,12 +2481,12 @@
     const rows = filteredActivity();
     const csv = toCsv(['일시', '사용자', '대상', '작업', '내용'],
       rows.map((e) => [e.at, e.user, ENTITY_LABEL[e.entity] || e.entity, ACTION_LABEL[e.action] || e.action, e.summary]));
-    download(`rackmanager-activity-${todayISO()}.csv`, csv);
+    download(`idc-atlas-activity-${todayISO()}.csv`, csv);
     toast(`${rows.length}건을 내보냈습니다.`);
   }
 
   function backupJson() {
-    download(`rackmanager-backup-${todayISO()}.json`, JSON.stringify(snapshot(), null, 2), 'application/json');
+    download(`idc-atlas-backup-${todayISO()}.json`, JSON.stringify(snapshot(), null, 2), 'application/json');
     toast('전체 데이터를 JSON으로 백업했습니다.');
   }
 
@@ -2494,7 +2503,7 @@
     subnetRows().forEach((r) => lines.push(['서브넷 사용률', r.s.cidr + ' ' + r.s.name, `${r.st.used}/${r.st.total} (${r.st.pct}%)`]));
     ipConflicts().forEach(([addr, list]) => lines.push(['IP 충돌', addr, list.map((i) => nm(L.device(i.deviceId)) || IP_TYPES[i.type]).join(' / ')]));
     const csv = toCsv(lines[0], lines.slice(1));
-    download(`rackmanager-report-${todayISO()}.csv`, csv);
+    download(`idc-atlas-report-${todayISO()}.csv`, csv);
     toast('리포트 요약을 내보냈습니다.');
   }
 
@@ -2868,7 +2877,7 @@
     reader.onload = function () {
       let snap;
       try { snap = JSON.parse(reader.result); } catch (err) { toast('JSON 파일을 읽을 수 없습니다.'); return; }
-      if (!snap || typeof snap !== 'object') { toast('올바른 RackManager 백업 파일이 아닙니다.'); return; }
+      if (!snap || typeof snap !== 'object') { toast('올바른 IDC Atlas 백업 파일이 아닙니다.'); return; }
       const data = snap.data ? snap.data : snap;
       const n = data && Array.isArray(data.devices) ? data.devices.length : 0;
       confirmModal('JSON 복원', `<b>${esc(file.name)}</b>${snap.savedAt ? ` (저장 ${esc(snap.savedAt)})` : ''}의 데이터로 현재 데이터를 모두 바꿀까요?<br>
@@ -2917,7 +2926,7 @@
   $('#theme-btn').addEventListener('click', function () {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
-    try { localStorage.setItem('rm-theme', next); } catch (err) { /* 무시 */ }
+    try { localStorage.setItem(THEME_KEY, next); } catch (err) { /* 무시 */ }
   });
   $('#print-btn').addEventListener('click', () => window.print());
   $('#menu-btn').addEventListener('click', function () {
@@ -2933,7 +2942,7 @@
      15. 시작
      ====================================================================== */
   try {
-    const saved = localStorage.getItem('rm-theme');
+    const saved = localStorage.getItem(THEME_KEY) || localStorage.getItem('rm-theme');
     if (saved) document.documentElement.dataset.theme = saved;
     else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme = 'dark';
   } catch (err) { /* 무시 */ }
