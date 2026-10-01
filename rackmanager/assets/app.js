@@ -86,22 +86,28 @@
   }
 
   /** 이전 버전 데이터에 새 필드 기본값을 채워 넣음 */
-  function normalize() {
-    db.devices.forEach((d) => {
+  function normalize(data) {
+    data = data || db;
+    data.devices.forEach((d) => {
       if (!d.status) d.status = d.inService === false ? 'maintenance' : 'active';
       d.inService = d.status === 'active';
       if (d.owner == null) d.owner = '';
     });
-    db.racks.forEach((r) => { if (r.powerKw == null) r.powerKw = 6; });
-    db.hardware.forEach((h) => { if (h.powerW == null) h.powerW = 0; });
+    data.racks.forEach((r) => { if (r.powerKw == null) r.powerKw = 6; });
+    data.hardware.forEach((h) => { if (h.powerW == null) h.powerW = 0; });
   }
 
   function applyData(data) {
     if (!data || typeof data !== 'object') throw new Error('데이터 형식이 올바르지 않습니다.');
     const missing = COLLECTIONS.filter((k) => !Array.isArray(data[k]) && !OPTIONAL_COLLECTIONS.includes(k));
     if (missing.length) throw new Error('필수 항목 누락: ' + missing.join(', '));
-    COLLECTIONS.forEach((k) => { db[k] = Array.isArray(data[k]) ? data[k] : []; });
-    normalize();
+    // 검증·정리를 모두 마친 뒤에만 현재 데이터와 교체 (실패 시 기존 데이터 유지)
+    const next = {};
+    COLLECTIONS.forEach((k) => { next[k] = Array.isArray(data[k]) ? data[k] : []; });
+    const bad = COLLECTIONS.filter((k) => next[k].some((x) => !x || typeof x !== 'object'));
+    if (bad.length) throw new Error('잘못된 항목 포함: ' + bad.join(', '));
+    normalize(next);
+    COLLECTIONS.forEach((k) => { db[k] = next[k]; });
   }
 
   function restore() {
@@ -250,6 +256,7 @@
     const net = s && subnetNet(s);
     if (!net) return '';
     const used = new Set(subnetIps(s.id).map((i) => IP.toInt(i.address)));
+    if (s.gateway) used.add(IP.toInt(s.gateway));   // 예약 기록이 없어도 게이트웨이 주소는 내주지 않음
     const n = IP.nextFree(net, used);
     return n === null ? '' : IP.fromInt(n);
   }
@@ -639,8 +646,10 @@
   function bulkBar() {
     const n = state.devices.selected.size;
     if (!n) return '';
+    const visible = new Set(filteredDevices().map((r) => r.id));
+    const hidden = Array.from(state.devices.selected).filter((id) => !visible.has(id)).length;
     return `<div class="bulkbar">
-      <b>${n}대 선택</b>
+      <b>${n}대 선택</b>${hidden ? `<span class="muted" style="font-size:12px">(${hidden}대는 현재 필터에 가려짐)</span>` : ''}
       <span class="grp">
         <select class="inp" id="bulk-status" aria-label="변경할 상태">${selectOptions(statusOptions(), 'active')}</select>
         <button class="btn sm mutating" data-action="bulk-status">상태 변경</button>
@@ -2343,7 +2352,9 @@
         if (taken) { toast(`${v.gateway}는 이미 ${taken.deviceId ? nm(L.device(taken.deviceId)) + '에' : (IP_TYPES[taken.type] || '') + '(으)로'} 등록돼 있어 게이트웨이로 쓸 수 없습니다.`); return false; }
       }
       if (sn) {
-        const outside = subnetIps(sn.id).filter((i) => !IP.contains(net, IP.toInt(i.address)) || IP.isReserved(net, IP.toInt(i.address)));
+        // 현재 게이트웨이 예약 기록은 저장 시 새 게이트웨이로 옮기므로 검사에서 제외
+        const outside = subnetIps(sn.id).filter((i) => !(i.type === 'gateway' && i.address === sn.gateway))
+          .filter((i) => !IP.contains(net, IP.toInt(i.address)) || IP.isReserved(net, IP.toInt(i.address)));
         if (outside.length) { toast(`등록된 주소 ${outside.length}개(${outside.slice(0, 3).map((i) => i.address).join(', ')})가 새 범위를 벗어납니다.`); return false; }
       }
       if (isNew) {
@@ -2412,8 +2423,9 @@
   function exportDevices(onlySelected) {
     const view = DEVICE_VIEWS[state.devices.view] ? state.devices.view : 'default';
     const cols = DEVICE_VIEWS[view].cols.map((k) => DEVICE_COLUMNS[k]);
-    let rows = applySort(filteredDevices(), state.devices.sort, cols);
-    if (onlySelected) rows = rows.filter((r) => state.devices.selected.has(r.id));
+    // 선택 내보내기는 일괄 작업과 같은 대상(필터에 가려진 선택 포함)을 사용
+    const source = onlySelected ? db.devices.filter((d) => state.devices.selected.has(d.id)).map(dv) : filteredDevices();
+    const rows = applySort(source, state.devices.sort, cols);
     const csv = toCsv(cols.map((c) => c.label), rows.map((r) => cols.map((c) => {
       if (c.key === 'monitored') return r.monitored ? '감시 중' : '미감시';
       if (c.key === 'pos') return r.posLabel + ' (' + r.sizeU + 'U)';
@@ -2735,6 +2747,11 @@
       case 'del-ip': {
         const ip = L.ip(id);
         if (!ip) break;
+        const owner = L.subnet(ip.subnetId);
+        if (owner && ip.type === 'gateway' && ip.address === owner.gateway) {
+          toast(`${ip.address}는 ${owner.cidr}의 게이트웨이입니다. 서브넷 편집에서 게이트웨이를 바꾸세요.`);
+          break;
+        }
         const dev = ip.deviceId ? L.device(ip.deviceId) : null;
         confirmModal('IP 삭제', `<b class="mono">${esc(ip.address)}</b>${dev ? ` (${esc(dev.name)})` : ''}를 해제할까요?<br><span class="muted">주소는 다시 사용 가능 상태가 됩니다.</span>`, '해제', () => {
           db.ipAddresses.splice(db.ipAddresses.indexOf(ip), 1);
@@ -2851,7 +2868,8 @@
     reader.onload = function () {
       let snap;
       try { snap = JSON.parse(reader.result); } catch (err) { toast('JSON 파일을 읽을 수 없습니다.'); return; }
-      const data = snap && snap.data ? snap.data : snap;
+      if (!snap || typeof snap !== 'object') { toast('올바른 RackManager 백업 파일이 아닙니다.'); return; }
+      const data = snap.data ? snap.data : snap;
       const n = data && Array.isArray(data.devices) ? data.devices.length : 0;
       confirmModal('JSON 복원', `<b>${esc(file.name)}</b>${snap.savedAt ? ` (저장 ${esc(snap.savedAt)})` : ''}의 데이터로 현재 데이터를 모두 바꿀까요?<br>
         <span class="muted">장비 ${n}대 · 서브넷 ${data && Array.isArray(data.subnets) ? data.subnets.length : 0}개</span>`, '복원', () => {
