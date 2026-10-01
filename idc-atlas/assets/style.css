@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RackManager prototype — design tokens
+   IDC Atlas prototype — design tokens
    ========================================================================== */
 :root {
   --bg:            #f4f6f8;
@@ -688,7 +688,7 @@ body.ro .readonly-lock { display: inline-flex; }
 }
 
 /* ==========================================================================
-   Print — RackManager ships dedicated print CSS; reproduced here.
+   Print — 원본 RackManager의 인쇄 전용 CSS를 재현
    ========================================================================== */
 @media print {
   :root { --bg: #fff; --surface: #fff; --surface-2: #fff; --surface-3: #fff; --border: #bbb; --text: #000; --text-2: #333; --text-3: #555; }
@@ -704,4 +704,113 @@ body.ro .readonly-lock { display: inline-flex; }
   .appfoot { border-top: 1px solid #bbb; color: #333; }
   a { color: #000; text-decoration: none; }
   @page { size: A4 landscape; margin: 12mm; }
+}
+
+/* ==========================================================================
+   v2 — 대시보드 · IPAM · 일괄 작업 · 변경 이력
+   ========================================================================== */
+.nav-count.alert { background: var(--danger); color: #fff; }
+.nav-item.active .nav-count.alert { background: var(--danger); color: #fff; }
+
+#foot-saved.err { color: var(--danger); }
+
+.dotstat.ok     { background: var(--ok);     box-shadow: 0 0 0 3px var(--ok-soft); }
+.dotstat.info   { background: var(--info);   box-shadow: 0 0 0 3px var(--info-soft); }
+.dotstat.warn   { background: var(--warn);   box-shadow: 0 0 0 3px var(--warn-soft); }
+.dotstat.danger { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+.dotstat.mute   { background: var(--text-3); box-shadow: 0 0 0 3px var(--surface-3); }
+
+a.stat.link { display: block; color: inherit; transition: border-color .15s, box-shadow .15s; }
+a.stat.link:hover { text-decoration: none; border-color: var(--accent-line); box-shadow: var(--shadow); }
+.stat .meter { margin-top: 10px; }
+
+/* 표 — 선택/충돌/과밀 행 */
+table.tbl th.selcol, table.tbl td.selcol { width: 34px; padding-right: 0; }
+table.tbl td.selcol input, table.tbl th.selcol input { accent-color: var(--accent); }
+table.tbl tr.picked { background: var(--accent-soft); }
+table.tbl tr.picked:hover { background: color-mix(in srgb, var(--accent-soft) 80%, var(--surface-3)); }
+table.tbl tr.conflict { background: color-mix(in srgb, var(--danger-soft) 70%, transparent); }
+table.tbl tr.hot td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+
+/* 일괄 작업 바 */
+.bulkbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 14px; border-bottom: 1px solid var(--accent-line);
+  background: var(--accent-soft); position: sticky; top: var(--topbar-h); z-index: 5;
+}
+.bulkbar b { font-size: 13px; color: var(--accent); margin-right: 4px; }
+.bulkbar .grp { display: inline-flex; gap: 4px; align-items: center; }
+.bulkbar select.inp { padding-top: 4px; padding-bottom: 4px; font-size: 12px; }
+
+/* 점검 항목 */
+.alerts { list-style: none; margin: 0; padding: 0; }
+.alerts li {
+  display: flex; align-items: center; gap: 12px; padding: 11px 16px;
+  border-bottom: 1px solid var(--border); border-left: 3px solid transparent;
+}
+.alerts li:last-child { border-bottom: none; }
+.alerts li.lv-danger { border-left-color: var(--danger); }
+.alerts li.lv-warn   { border-left-color: var(--warn); }
+.alerts li.lv-info   { border-left-color: var(--info); }
+.alerts .ic { font-size: 18px; width: 24px; text-align: center; }
+.alerts .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.alerts .tx b { font-size: 13px; }
+.alerts .tx span { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alerts li.lv-danger .tx b { color: var(--danger); }
+
+/* 변경 이력 타임라인 */
+.timeline { list-style: none; margin: 0; padding: 4px 0; }
+.timeline li {
+  display: grid; grid-template-columns: 118px auto 1fr auto; gap: 10px; align-items: baseline;
+  padding: 8px 16px; font-size: 12.5px; border-bottom: 1px dashed var(--border);
+}
+.timeline li:last-child { border-bottom: none; }
+.timeline .t { font-size: 11px; color: var(--text-3); }
+.timeline .s { min-width: 0; word-break: break-all; }
+.timeline .u { font-size: 11px; }
+
+.notice-inline { font-size: 12px; color: var(--warn); border-top: 1px solid var(--border); padding: 10px 16px; }
+
+/* 랙 실장도 — 전력 바 */
+.rack-foot.power { margin-top: -2px; }
+.rack-foot.power .mono { font-size: 10.5px; }
+
+/* IP 맵 */
+.ipmap {
+  display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 3px;
+  padding: 14px 16px; max-height: 520px; overflow-y: auto;
+}
+.ipc, .ipc-sw {
+  display: flex; align-items: center; justify-content: center;
+  height: 26px; border-radius: 5px; font: 600 10.5px/1 var(--mono);
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text-3);
+  padding: 0; cursor: default;
+}
+a.ipc, button.ipc { cursor: pointer; }
+a.ipc:hover, button.ipc:hover { text-decoration: none; box-shadow: 0 0 0 2px var(--accent); position: relative; z-index: 1; }
+.ipc.free, .ipc-sw.free     { background: var(--surface); border-style: dashed; }
+.ipc.free:hover { background: var(--accent-soft); color: var(--accent); }
+.ipc.assigned, .ipc-sw.assigned { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+.ipc.reserved, .ipc-sw.reserved { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 35%, transparent); color: var(--warn); }
+.ipc.dhcp, .ipc-sw.dhcp     { background: var(--info-soft); border-color: color-mix(in srgb, var(--info) 35%, transparent); color: var(--info); }
+.ipc.gw, .ipc-sw.gw       { background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 40%, transparent); color: var(--ok); }
+.ipc.conflict, .ipc-sw.conflict { background: var(--danger); border-color: var(--danger); color: #fff; }
+.ipc.sys, .ipc-sw.sys      { background: var(--surface-3); color: var(--text-3); opacity: .6; }
+.ipc.focus    { box-shadow: 0 0 0 2px var(--accent), 0 0 0 5px var(--accent-soft); position: relative; z-index: 1; }
+.legend b.ipc-sw { width: 14px; height: 14px; display: inline-block; }
+body.ro .ipc.free { pointer-events: none; }
+
+@media (max-width: 1000px) {
+  .timeline li { grid-template-columns: auto 1fr; }
+  .timeline .t { grid-column: 1 / -1; }
+  .bulkbar { top: var(--topbar-h); }
+}
+@media (max-width: 560px) {
+  .ipmap { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .alerts li { flex-wrap: wrap; }
+  .alerts .tx span { white-space: normal; }
+}
+@media print {
+  .bulkbar, .selcol, .ipc-sw { display: none !important; }
+  .ipmap { max-height: none; overflow: visible; }
 }
