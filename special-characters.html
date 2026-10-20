@@ -114,6 +114,20 @@
     transition: opacity .15s;
   }
   #status.show { opacity: .92; }
+  #tooltip {
+    position: fixed;
+    z-index: 10;
+    max-width: 240px;
+    padding: 5px 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #fff;
+    background: #1c1c1e;
+    border-radius: 4px;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #tooltip[hidden] { display: none; }
 
   @media (max-width: 600px) {
     body { padding: 16px; }
@@ -132,7 +146,7 @@
     .column h2 { color: #bbb; }
     .grid, .cell { border-color: #3a3b3e; }
     .cell:hover { background: #33405e; }
-    #status { background: #e6e6e6; color: #1c1c1e; }
+    #status, #tooltip { background: #e6e6e6; color: #1c1c1e; }
   }
 </style>
 </head>
@@ -144,6 +158,7 @@
 <nav class="toolbar" id="toolbar" aria-label="자음 바로가기"></nav>
 <div id="groups"></div>
 <div id="status" role="status" aria-live="polite"></div>
+<div id="tooltip" role="tooltip" hidden></div>
 
 <script>
 // 코드 포인트 구간 [시작, 끝]을 문자 배열로 펼침
@@ -211,9 +226,373 @@ const GROUPS = [
 // 화면에 보이지 않는 문자는 이름으로 표시
 const LABELS = { [SOFT_HYPHEN]: 'SHY' };
 
+// 문자별 명칭: 한 줄에 "문자 한글명|영문명" (한쪽이 없으면 비워 둠)
+function parseNames(text) {
+  const out = {};
+  for (const line of text.split('\n')) {
+    const t = line.trim();
+    if (!t) continue;
+    const ch = String.fromCodePoint(t.codePointAt(0));
+    const [ko = '', en = ''] = t.slice(ch.length).split('|').map(s => s.trim());
+    out[ch] = { ko, en };
+  }
+  return out;
+}
+
+const NAMES = parseNames(`
+！ 느낌표|Exclamation Mark
+＇ 작은따옴표|Apostrophe
+， 쉼표|Comma
+． 마침표|Full Stop
+／ 빗금|Slash
+： 쌍점|Colon
+； 쌍반점|Semicolon
+？ 물음표|Question Mark
+＾ |Circumflex Accent
+＿ 밑줄|Low Line
+｀ |Grave Accent
+｜ 세로 막대|Vertical Line
+￣ |Macron
+、 모점|Ideographic Comma
+。 고리점|Ideographic Full Stop
+· 가운뎃점|Middle Dot
+‥ |Two Dot Leader
+… 줄임표|Horizontal Ellipsis
+¨ |Diaeresis
+〃 |Ditto Mark
+― 줄표|Horizontal Bar
+∥ 평행|Parallel To
+＼ 역슬래시|Reverse Solidus
+∼ 물결표|Tilde Operator
+´ |Acute Accent
+～ 물결표|Tilde
+ˇ |Caron
+˘ |Breve
+˝ |Double Acute Accent
+˚ |Ring Above
+˙ |Dot Above
+¸ |Cedilla
+˛ |Ogonek
+¡ |Inverted Exclamation Mark
+¿ |Inverted Question Mark
+ː |Triangular Colon
+＂ 큰따옴표|Quotation Mark
+（ 여는 소괄호|Left Parenthesis
+） 닫는 소괄호|Right Parenthesis
+［ 여는 대괄호|Left Square Bracket
+］ 닫는 대괄호|Right Square Bracket
+｛ 여는 중괄호|Left Curly Bracket
+｝ 닫는 중괄호|Right Curly Bracket
+‘ 여는 작은따옴표|Left Single Quotation Mark
+’ 닫는 작은따옴표|Right Single Quotation Mark
+“ 여는 큰따옴표|Left Double Quotation Mark
+” 닫는 큰따옴표|Right Double Quotation Mark
+〔 |Left Tortoise Shell Bracket
+〕 |Right Tortoise Shell Bracket
+〈 여는 홑화살괄호|Left Angle Bracket
+〉 닫는 홑화살괄호|Right Angle Bracket
+《 여는 겹화살괄호|Left Double Angle Bracket
+》 닫는 겹화살괄호|Right Double Angle Bracket
+「 여는 홑낫표|Left Corner Bracket
+」 닫는 홑낫표|Right Corner Bracket
+『 여는 겹낫표|Left White Corner Bracket
+』 닫는 겹낫표|Right White Corner Bracket
+【 |Left Black Lenticular Bracket
+】 |Right Black Lenticular Bracket
+＋ 더하기|Plus Sign
+－ 빼기|Hyphen-Minus
+＜ 보다 작음|Less-Than Sign
+＝ 등호|Equals Sign
+＞ 보다 큼|Greater-Than Sign
+± 복호|Plus-Minus Sign
+× 곱하기|Multiplication Sign
+÷ 나누기|Division Sign
+≠ 같지 않음|Not Equal To
+≤ 작거나 같음|Less-Than or Equal To
+≥ 크거나 같음|Greater-Than or Equal To
+∞ 무한대|Infinity
+∴ 그러므로|Therefore
+♂ 남성|Male Sign
+♀ 여성|Female Sign
+∠ 각|Angle
+⊥ 수직|Up Tack
+⌒ 호|Arc
+∂ 편미분|Partial Differential
+∇ 나블라|Nabla
+≡ 합동|Identical To
+≒ 근사|Approximately Equal To or the Image Of
+≪ 매우 작음|Much Less-Than
+≫ 매우 큼|Much Greater-Than
+√ 제곱근|Square Root
+∽ 닮음|Reversed Tilde
+∝ 비례|Proportional To
+∵ 왜냐하면|Because
+∫ 적분|Integral
+∬ 이중 적분|Double Integral
+∈ 원소|Element Of
+∋ 원소로 포함|Contains as Member
+⊆ 부분집합 또는 같음|Subset of or Equal To
+⊇ 상위집합 또는 같음|Superset of or Equal To
+⊂ 부분집합|Subset Of
+⊃ 상위집합|Superset Of
+∪ 합집합|Union
+∩ 교집합|Intersection
+∧ 논리곱|Logical And
+∨ 논리합|Logical Or
+￢ 부정|Not Sign
+⇒ |Rightwards Double Arrow
+⇔ |Left Right Double Arrow
+∀ 모든|For All
+∃ 존재|There Exists
+∮ 선적분|Contour Integral
+∑ 합|N-Ary Summation
+∏ 곱|N-Ary Product
+＄ 달러|Dollar Sign
+％ 퍼센트|Percent Sign
+￦ 원|Won Sign
+′ |Prime
+″ |Double Prime
+℃ 섭씨|Degree Celsius
+Å 옹스트롬|Angstrom Sign
+￠ 센트|Cent Sign
+￡ 파운드|Pound Sign
+￥ 엔|Yen Sign
+¤ 통화 기호|Currency Sign
+℉ 화씨|Degree Fahrenheit
+‰ 퍼밀|Per Mille Sign
+€ 유로|Euro Sign
+㎕ 마이크로리터|Microliter
+㎖ 밀리리터|Milliliter
+㎗ 데시리터|Deciliter
+ℓ 리터|Liter
+㎘ 킬로리터|Kiloliter
+㏄ 시시|Cubic Centimeter
+㎣ 세제곱밀리미터|Cubic Millimeter
+㎤ 세제곱센티미터|Cubic Centimeter
+㎥ 세제곱미터|Cubic Meter
+㎦ 세제곱킬로미터|Cubic Kilometer
+㎙ 펨토미터|Femtometer
+㎚ 나노미터|Nanometer
+㎛ 마이크로미터|Micrometer
+㎜ 밀리미터|Millimeter
+㎝ 센티미터|Centimeter
+㎞ 킬로미터|Kilometer
+㎟ 제곱밀리미터|Square Millimeter
+㎠ 제곱센티미터|Square Centimeter
+㎡ 제곱미터|Square Meter
+㎢ 제곱킬로미터|Square Kilometer
+㏊ 헥타르|Hectare
+㎍ 마이크로그램|Microgram
+㎎ 밀리그램|Milligram
+㎏ 킬로그램|Kilogram
+㏏ 킬로톤|Kiloton
+㎈ 칼로리|Calorie
+㎉ 킬로칼로리|Kilocalorie
+㏈ 데시벨|Decibel
+㎧ 미터 매 초|Meters per Second
+㎨ 미터 매 초 제곱|Meters per Second Squared
+㎰ 피코초|Picosecond
+㎱ 나노초|Nanosecond
+㎲ 마이크로초|Microsecond
+㎳ 밀리초|Millisecond
+㎴ 피코볼트|Picovolt
+㎵ 나노볼트|Nanovolt
+㎶ 마이크로볼트|Microvolt
+㎷ 밀리볼트|Millivolt
+㎸ 킬로볼트|Kilovolt
+㎹ 메가볼트|Megavolt
+㎀ 피코암페어|Picoampere
+㎁ 나노암페어|Nanoampere
+㎂ 마이크로암페어|Microampere
+㎃ 밀리암페어|Milliampere
+㎄ 킬로암페어|Kiloampere
+㎺ 피코와트|Picowatt
+㎻ 나노와트|Nanowatt
+㎼ 마이크로와트|Microwatt
+㎽ 밀리와트|Milliwatt
+㎾ 킬로와트|Kilowatt
+㎿ 메가와트|Megawatt
+㎐ 헤르츠|Hertz
+㎑ 킬로헤르츠|Kilohertz
+㎒ 메가헤르츠|Megahertz
+㎓ 기가헤르츠|Gigahertz
+㎔ 테라헤르츠|Terahertz
+Ω 옴|Ohm
+㏀ 킬로옴|Kiloohm
+㏁ 메가옴|Megaohm
+㎊ 피코패럿|Picofarad
+㎋ 나노패럿|Nanofarad
+㎌ 마이크로패럿|Microfarad
+㏖ 몰|Mole
+㏅ 칸델라|Candela
+㎭ 라디안|Radian
+㎮ 라디안 매 초|Radians per Second
+㎯ 라디안 매 초 제곱|Radians per Second Squared
+㏛ 스테라디안|Steradian
+㎩ 파스칼|Pascal
+㎪ 킬로파스칼|Kilopascal
+㎫ 메가파스칼|Megapascal
+㎬ 기가파스칼|Gigapascal
+㏝ 웨버|Weber
+㏐ 루멘|Lumen
+㏓ 럭스|Lux
+㏃ 베크렐|Becquerel
+㏉ 그레이|Gray
+㏜ 시버트|Sievert
+㏆ 쿨롬 매 킬로그램|Coulombs per Kilogram
+＃ |Number Sign
+＆ 앰퍼샌드|Ampersand
+＊ 별표|Asterisk
+＠ 골뱅이|Commercial At
+§ 절|Section Sign
+※ 참고표|Reference Mark
+☆ 빈 별|White Star
+★ 검은 별|Black Star
+○ 빈 원|White Circle
+● 검은 원|Black Circle
+◎ 이중 원|Bullseye
+◇ 빈 마름모|White Diamond
+◆ 검은 마름모|Black Diamond
+□ 빈 사각형|White Square
+■ 검은 사각형|Black Square
+△ 빈 삼각형|White Up-Pointing Triangle
+▲ 검은 삼각형|Black Up-Pointing Triangle
+▽ 빈 역삼각형|White Down-Pointing Triangle
+▼ 검은 역삼각형|Black Down-Pointing Triangle
+→ 오른쪽 화살표|Rightwards Arrow
+← 왼쪽 화살표|Leftwards Arrow
+↑ 위쪽 화살표|Upwards Arrow
+↓ 아래쪽 화살표|Downwards Arrow
+↔ 좌우 화살표|Left Right Arrow
+〓 |Geta Mark
+◁ 빈 왼쪽 삼각형|White Left-Pointing Triangle
+◀ 검은 왼쪽 삼각형|Black Left-Pointing Triangle
+▷ 빈 오른쪽 삼각형|White Right-Pointing Triangle
+▶ 검은 오른쪽 삼각형|Black Right-Pointing Triangle
+♤ 빈 스페이드|White Spade Suit
+♠ 검은 스페이드|Black Spade Suit
+♡ 빈 하트|White Heart Suit
+♥ 검은 하트|Black Heart Suit
+♧ 빈 클로버|White Club Suit
+♣ 검은 클로버|Black Club Suit
+⊙ |Circled Dot Operator
+◈ |White Diamond Containing Black Small Diamond
+▣ |White Square Containing Black Small Square
+◐ |Circle with Left Half Black
+◑ |Circle with Right Half Black
+▒ |Medium Shade
+▤ |Square with Horizontal Fill
+▥ |Square with Vertical Fill
+▨ |Square with Upper Right to Lower Left Fill
+▧ |Square with Upper Left to Lower Right Fill
+▦ |Square with Orthogonal Crosshatch Fill
+▩ |Square with Diagonal Crosshatch Fill
+♨ 온천|Hot Springs
+☏ 빈 전화기|White Telephone
+☎ 검은 전화기|Black Telephone
+☜ 왼쪽 손가락|White Left Pointing Index
+☞ 오른쪽 손가락|White Right Pointing Index
+¶ 단락 기호|Pilcrow Sign
+† 단검표|Dagger
+‡ 이중 단검표|Double Dagger
+↕ 상하 화살표|Up Down Arrow
+↗ 북동 화살표|North East Arrow
+↙ 남서 화살표|South West Arrow
+↖ 북서 화살표|North West Arrow
+↘ 남동 화살표|South East Arrow
+♭ 플랫|Music Flat Sign
+♩ 4분음표|Quarter Note
+♪ 8분음표|Eighth Note
+♬ |Beamed Sixteenth Notes
+㉿ |Korean Standard Symbol
+㈜ 주식회사|
+№ 번호|Numero Sign
+㏇ |Square Co
+™ 상표|Trade Mark Sign
+㏂ 오전|Square A.M.
+㏘ 오후|Square P.M.
+℡ 전화|Telephone Sign
+® 등록 상표|Registered Sign
+½ 2분의 1|One Half
+⅓ 3분의 1|One Third
+⅔ 3분의 2|Two Thirds
+¼ 4분의 1|One Quarter
+¾ 4분의 3|Three Quarters
+⅛ 8분의 1|One Eighth
+⅜ 8분의 3|Three Eighths
+⅝ 8분의 5|Five Eighths
+⅞ 8분의 7|Seven Eighths
+¹ 위 첨자 1|Superscript One
+² 위 첨자 2|Superscript Two
+³ 위 첨자 3|Superscript Three
+⁴ 위 첨자 4|Superscript Four
+ⁿ 위 첨자 n|Superscript Latin Small Letter N
+₁ 아래 첨자 1|Subscript One
+₂ 아래 첨자 2|Subscript Two
+₃ 아래 첨자 3|Subscript Three
+₄ 아래 첨자 4|Subscript Four
+Æ |Latin Capital Letter AE
+Ð |Latin Capital Letter Eth
+ª |Feminine Ordinal Indicator
+Ħ |Latin Capital Letter H with Stroke
+Ĳ |Latin Capital Ligature IJ
+Ŀ |Latin Capital Letter L with Middle Dot
+Ł |Latin Capital Letter L with Stroke
+Ø |Latin Capital Letter O with Stroke
+Œ |Latin Capital Ligature OE
+º |Masculine Ordinal Indicator
+Þ |Latin Capital Letter Thorn
+Ŧ |Latin Capital Letter T with Stroke
+Ŋ |Latin Capital Letter Eng
+æ |Latin Small Letter AE
+đ |Latin Small Letter D with Stroke
+ð |Latin Small Letter Eth
+ħ |Latin Small Letter H with Stroke
+ı |Latin Small Letter Dotless I
+ĳ |Latin Small Ligature IJ
+ĸ |Latin Small Letter Kra
+ŀ |Latin Small Letter L with Middle Dot
+ł |Latin Small Letter L with Stroke
+ø |Latin Small Letter O with Stroke
+œ |Latin Small Ligature OE
+ß |Latin Small Letter Sharp S
+þ |Latin Small Letter Thorn
+ŧ |Latin Small Letter T with Stroke
+ŋ |Latin Small Letter Eng
+ŉ |Latin Small Letter N Preceded by Apostrophe
+`);
+NAMES[SOFT_HYPHEN] = { ko: '소프트 하이픈', en: 'Soft Hyphen' };
+
+// 한글 호환 자모(U+3131~U+3163) 명칭
+list(
+  '기역 쌍기역 기역시옷 니은 니은지읒 니은히읗 디귿 쌍디귿 리을 리을기역 리을미음 리을비읍 리을시옷 리을티읕 리을피읖 리을히읗 ' +
+  '미음 비읍 쌍비읍 비읍시옷 시옷 쌍시옷 이응 지읒 쌍지읒 치읓 키읔 티읕 피읖 히읗 ' +
+  '아 애 야 얘 어 에 여 예 오 와 왜 외 요 우 워 웨 위 유 으 의 이'
+).forEach((ko, i) => { NAMES[String.fromCodePoint(0x3131 + i)] = { ko, en: '' }; });
+
+// 그리스 문자 명칭 (U+03A2는 비어 있는 코드 포인트라 대문자에서 제외)
+[
+  ['알파', 'Alpha'], ['베타', 'Beta'], ['감마', 'Gamma'], ['델타', 'Delta'], ['엡실론', 'Epsilon'], ['제타', 'Zeta'],
+  ['에타', 'Eta'], ['세타', 'Theta'], ['이오타', 'Iota'], ['카파', 'Kappa'], ['람다', 'Lambda'], ['뮤', 'Mu'],
+  ['뉴', 'Nu'], ['크시', 'Xi'], ['오미크론', 'Omicron'], ['파이', 'Pi'], ['로', 'Rho'], ['시그마', 'Sigma'],
+  ['타우', 'Tau'], ['입실론', 'Upsilon'], ['피', 'Phi'], ['카이', 'Chi'], ['프사이', 'Psi'], ['오메가', 'Omega']
+].forEach(([ko, en], i) => {
+  const offset = i >= 17 ? i + 1 : i;
+  NAMES[String.fromCodePoint(0x0391 + offset)] = { ko: '대문자 ' + ko, en: 'Capital ' + en };
+  NAMES[String.fromCodePoint(0x03B1 + offset)] = { ko: '소문자 ' + ko, en: 'Small ' + en };
+});
+
+// 한글·영문 명칭 조합: 둘 다 있으면 "한글 (영문)", 하나만 있으면 그것만, 둘 다 없으면 빈 문자열
+function tooltipOf(ch) {
+  const { ko = '', en = '' } = NAMES[ch] || {};
+  if (ko && en) return `${ko} (${en})`;
+  return ko || en;
+}
+
 const toolbarEl = document.getElementById('toolbar');
 const groupsEl = document.getElementById('groups');
 const statusEl = document.getElementById('status');
+const tooltipEl = document.getElementById('tooltip');
 
 const codeOf = ch => 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
 
@@ -243,7 +622,8 @@ for (const group of GROUPS) {
     cell.type = 'button';
     cell.className = 'cell';
     cell.dataset.char = ch;
-    cell.title = codeOf(ch);
+    const tip = tooltipOf(ch);
+    if (tip) cell.dataset.tip = tip;
     if (LABELS[ch]) {
       cell.classList.add('label');
       cell.textContent = LABELS[ch];
@@ -262,6 +642,39 @@ function syncToolbarHeight() {
 }
 syncToolbarHeight();
 window.addEventListener('resize', syncToolbarHeight);
+
+// 브라우저 기본 title 툴팁은 지연이 있어 직접 그린 툴팁을 즉시 표시
+function showTooltip(cell) {
+  tooltipEl.textContent = cell.dataset.tip;
+  tooltipEl.hidden = false;
+  const rect = cell.getBoundingClientRect();
+  const tipRect = tooltipEl.getBoundingClientRect();
+  const margin = 6;
+  let left = rect.left + rect.width / 2 - tipRect.width / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - tipRect.width - margin));
+  let top = rect.top - tipRect.height - margin;
+  if (top < margin) top = rect.bottom + margin;
+  tooltipEl.style.left = left + 'px';
+  tooltipEl.style.top = top + 'px';
+}
+
+function hideTooltip() {
+  tooltipEl.hidden = true;
+}
+
+groupsEl.addEventListener('mouseover', (e) => {
+  const cell = e.target.closest('.cell');
+  if (cell && cell.dataset.tip) showTooltip(cell);
+  else hideTooltip();
+});
+groupsEl.addEventListener('mouseleave', hideTooltip);
+groupsEl.addEventListener('focusin', (e) => {
+  const cell = e.target.closest('.cell');
+  if (cell && cell.dataset.tip) showTooltip(cell);
+  else hideTooltip();
+});
+groupsEl.addEventListener('focusout', hideTooltip);
+window.addEventListener('scroll', hideTooltip, { passive: true });
 
 async function copyText(text) {
   try {
