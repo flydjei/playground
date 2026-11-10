@@ -1,75 +1,45 @@
 /* ==========================================================================
    IDC Atlas prototype — design tokens
+   색 · 글꼴 · 모서리 값은 playground 공통 토큰(../assets/common.css)을 그대로 쓴다.
+   여기서는 이 앱의 기존 변수 이름을 공통 토큰에 연결하고, 이 앱에만 필요한 값만 정의한다.
    ========================================================================== */
 :root {
-  --bg:            #f4f6f8;
-  --surface:       #ffffff;
-  --surface-2:     #f8fafc;
-  --surface-3:     #eef1f5;
-  --border:        #e2e6ec;
-  --border-strong: #ccd2db;
-  --text:          #0e1420;
-  --text-2:        #5b6675;
-  --text-3:        #8b95a4;
+  /* 공통 토큰에서 그대로 오는 것: --bg --surface --border --text
+     --accent --accent-hover --accent-fg --accent-soft --accent-line
+     --ok --warn --info --ok-soft --warn-soft --info-soft */
+  --surface-2:     var(--field-ro-bg);
+  --surface-3:     var(--neutral);
+  --border-strong: var(--field-border);
+  --text-2:        var(--text-sub);
+  --text-3:        var(--text-muted);
 
-  --accent:        #5a5ae0;
-  --accent-hover:  #4a4ad0;
-  --accent-soft:   #eeeefd;
-  --accent-line:   #c9c9f6;
+  /* 공통 --danger 는 채움 전용(글자는 흰색)이지만, 이 앱은 --danger 를 글자색으로도 쓰므로
+     테마에 따라 밝기가 바뀌는 --error 에 연결한다. */
+  --danger:        var(--error);
+  --danger-soft:   var(--error-soft);
 
-  --ok:            #0d9668;
-  --ok-soft:       #e6f6ef;
-  --warn:          #b97400;
-  --warn-soft:     #fdf3e0;
-  --danger:        #d33b3b;
-  --danger-soft:   #fdeced;
-  --info:          #0b7ec4;
-  --info-soft:     #e7f3fb;
+  --r-sm: var(--radius);
+  --r:    var(--radius-panel);
+  --r-lg: var(--radius-panel);
 
-  --rack-empty:    #f1f4f8;
-  --rack-grid:     #dfe4ea;
+  --mono: var(--font-mono);
+
+  /* 이 앱 전용 */
+  --rack-empty:    #f1f2f5;
+  --rack-grid:     #dfe1e6;
 
   --shadow-sm: 0 1px 2px rgba(16,24,40,.06);
   --shadow:    0 1px 3px rgba(16,24,40,.07), 0 10px 28px rgba(16,24,40,.07);
   --shadow-lg: 0 24px 64px rgba(16,24,40,.22);
 
-  --r-sm: 6px;
-  --r:    10px;
-  --r-lg: 14px;
-
   --sidebar-w: 236px;
   --topbar-h:  60px;
-
-  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+/* 테마는 app.js 가 <html data-theme> 로 항상 명시한다 (저장값 → 시스템 설정 순) */
 [data-theme="dark"] {
-  --bg:            #0b0d11;
-  --surface:       #14181e;
-  --surface-2:     #191e25;
-  --surface-3:     #202631;
-  --border:        #262d37;
-  --border-strong: #38414e;
-  --text:          #e9ecf1;
-  --text-2:        #9aa5b4;
-  --text-3:        #6b7686;
-
-  --accent:        #8f8ff8;
-  --accent-hover:  #a3a3ff;
-  --accent-soft:   #1c1d38;
-  --accent-line:   #3a3a72;
-
-  --ok:            #3ed296;
-  --ok-soft:       #10281e;
-  --warn:          #edb04a;
-  --warn-soft:     #2a2013;
-  --danger:        #ff6f6f;
-  --danger-soft:   #2d1518;
-  --info:          #56b6ea;
-  --info-soft:     #10222e;
-
-  --rack-empty:    #171c23;
-  --rack-grid:     #232a34;
+  --rack-empty:    #222326;
+  --rack-grid:     #34353a;
 
   --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
   --shadow:    0 1px 3px rgba(0,0,0,.45), 0 12px 32px rgba(0,0,0,.45);
@@ -79,15 +49,10 @@
 /* ==========================================================================
    Base
    ========================================================================== */
-* { box-sizing: border-box; }
-
+/* box-sizing, body 의 글꼴 · 배경 · 글자색은 공통 common.css 에서 온다 */
 html, body { height: 100%; }
 
 body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Pretendard GOV', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -104,11 +69,11 @@ input, select, textarea, button { font: inherit; color: inherit; }
 
 .skip-link {
   position: absolute; left: -9999px; top: 0; z-index: 100;
-  background: var(--accent); color: #fff; padding: 10px 16px; border-radius: 0 0 var(--r) 0;
+  background: var(--accent); color: var(--accent-fg); padding: 10px 16px; border-radius: 0 0 var(--r) 0;
 }
 .skip-link:focus { left: 0; }
 
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ==========================================================================
    Shell layout
@@ -140,8 +105,8 @@ input, select, textarea, button { font: inherit; color: inherit; }
   width: 38px; height: 38px; flex: none;
   display: grid; place-items: center;
   border-radius: 11px;
-  background: linear-gradient(140deg, var(--accent), #8b5cf6);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-fg);
   box-shadow: 0 6px 16px -6px var(--accent);
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.25; }
@@ -152,7 +117,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
 .nav-item {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 11px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   color: var(--text-2);
   font-size: 13.5px; font-weight: 600;
   text-decoration: none;
@@ -177,7 +142,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
   display: flex; align-items: center; gap: 8px;
   padding: 9px 11px; margin-top: 2px;
   font-size: 12.5px; color: var(--text-2); cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 .ro-toggle:hover { background: var(--surface-3); }
 .ro-toggle input { accent-color: var(--accent); }
@@ -221,7 +186,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
   width: 34px; height: 34px;
   display: grid; place-items: center;
   background: transparent; border: 1px solid transparent;
-  border-radius: 8px; cursor: pointer; font-size: 15px;
+  border-radius: var(--radius); cursor: pointer; font-size: 15px;
 }
 .icon-btn:hover { background: var(--surface-3); }
 
@@ -229,8 +194,8 @@ input, select, textarea, button { font: inherit; color: inherit; }
 .avatar {
   width: 30px; height: 30px; border-radius: 50%;
   display: grid; place-items: center;
-  background: linear-gradient(140deg, var(--accent), #8b5cf6);
-  color: #fff; font-weight: 700; font-size: 13px;
+  background: var(--accent);
+  color: var(--accent-fg); font-weight: 700; font-size: 13px;
 }
 .who-text { display: flex; flex-direction: column; line-height: 1.2; }
 .who-text strong { font-size: 12.5px; }
@@ -276,7 +241,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
   padding: 7px 13px;
   background: var(--surface);
   border: 1px solid var(--border-strong);
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: 13px; font-weight: 600;
   cursor: pointer;
   text-decoration: none; color: var(--text);
@@ -285,18 +250,18 @@ input, select, textarea, button { font: inherit; color: inherit; }
 }
 .btn:hover { background: var(--surface-3); text-decoration: none; }
 .btn:active { transform: translateY(1px); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
 .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
 .btn.danger:hover { background: var(--danger-soft); }
 .btn.ghost { border-color: transparent; background: transparent; }
 .btn.ghost:hover { background: var(--surface-3); }
-.btn.sm { padding: 4px 9px; font-size: 12px; border-radius: 7px; }
+.btn.sm { padding: 4px 9px; font-size: 12px; }
 .btn[disabled] { opacity: .45; pointer-events: none; }
 .btn-group { display: inline-flex; }
 .btn-group .btn { border-radius: 0; margin-left: -1px; }
-.btn-group .btn:first-child { border-radius: 8px 0 0 8px; margin-left: 0; }
-.btn-group .btn:last-child { border-radius: 0 8px 8px 0; }
+.btn-group .btn:first-child { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }
+.btn-group .btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
 .btn-group .btn.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); z-index: 1; }
 
 /* ==========================================================================
@@ -427,9 +392,9 @@ table.tbl td .sub { display: block; font-size: 11px; color: var(--text-3); }
 .field > label { font-size: 11.5px; font-weight: 600; color: var(--text-3); white-space: nowrap; }
 
 select.inp, input.inp, textarea.inp {
-  background: var(--surface);
+  background: var(--field-bg);
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: var(--radius);
   padding: 6px 9px;
   font-size: 13px;
   min-width: 0;
@@ -632,7 +597,7 @@ textarea.inp { resize: vertical; min-height: 70px; line-height: 1.5; }
 .tabs a {
   padding: 7px 13px; font-size: 13px; font-weight: 600; color: var(--text-2);
   border: 1px solid transparent; border-bottom: none;
-  border-radius: 8px 8px 0 0; margin-bottom: -1px;
+  border-radius: var(--radius) var(--radius) 0 0; margin-bottom: -1px;
 }
 .tabs a:hover { color: var(--text); text-decoration: none; background: var(--surface-3); }
 .tabs a.on { background: var(--surface); border-color: var(--border); color: var(--accent); }
@@ -646,8 +611,8 @@ textarea.inp { resize: vertical; min-height: 70px; line-height: 1.5; }
 
 .toast-root { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 90; display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .toast {
-  background: var(--text); color: var(--bg);
-  padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  background: var(--toast-bg); color: var(--toast-fg);
+  padding: 10px 16px; border-radius: var(--radius); font-size: 13px;
   box-shadow: var(--shadow-lg);
   animation: toastin .18s ease;
 }
@@ -691,7 +656,7 @@ body.ro .readonly-lock { display: inline-flex; }
    Print — 원본 RackManager의 인쇄 전용 CSS를 재현
    ========================================================================== */
 @media print {
-  :root { --bg: #fff; --surface: #fff; --surface-2: #fff; --surface-3: #fff; --border: #bbb; --text: #000; --text-2: #333; --text-3: #555; }
+  :root, :root[data-theme] { --bg: #fff; --surface: #fff; --surface-2: #fff; --surface-3: #fff; --border: #bbb; --text: #000; --text-2: #333; --text-3: #555; }
   .sidebar, .topbar, .toolbar, .filters, .scrim, .toast-root, .page-head .actions,
   .rowbtn, .btn, .tabs, .slot::after { display: none !important; }
   .shell { display: block; }

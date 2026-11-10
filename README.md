@@ -7,8 +7,10 @@
 - [ip-subnet-calculator.html](https://flydjei.github.io/playground/ip-subnet-calculator.html) — IP 서브넷 계산기
 - [ip-extractor.html](https://flydjei.github.io/playground/ip-extractor.html) — IP 추출기
 - [special-characters.html](https://flydjei.github.io/playground/special-characters.html) — 한글 자음 + 한자 특수문자표
-- `common.css` · `common.js` — 위 세 도구가 함께 쓰는 디자인 토큰·공통 컴포넌트와 동작(복사, 토스트 알림, 버튼 피드백, 저장)
 - [idc-atlas/](https://flydjei.github.io/playground/idc-atlas/) — IDC Atlas: IDC 랙 · IP · 장비 통합 관리 프로토타입
+- `assets/` — 공통 디자인 파일
+  - `common.css` — 모든 페이지(도구 3종 · IDC Atlas)가 함께 쓰는 디자인 토큰(색 · 글꼴 · 모서리)과 기본 스타일, 라이트/다크 테마
+  - `tools.css` · `common.js` — 도구 3종의 공통 컴포넌트와 동작(복사, 토스트 알림, 버튼 피드백, 저장)
 
 ### idc-atlas/ — IDC Atlas
 
