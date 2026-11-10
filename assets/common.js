@@ -1,7 +1,7 @@
 // 도구 페이지(서브넷 IP 계산기 · IP 추출기 · 특수문자표)가 함께 쓰는 동작
 // 숫자 표기, 클립보드 복사, 토스트 알림, 버튼 피드백, 텍스트 파일 저장
 
-// 세로 배치(모바일)로 바뀌는 기준. common.css 의 미디어 쿼리와 같은 값이어야 한다.
+// 세로 배치(모바일)로 바뀌는 기준. tools.css 의 미디어 쿼리와 같은 값이어야 한다.
 const MOBILE_QUERY = '(max-width: 720px)';
 
 function fmt(n) { return n.toLocaleString(); }

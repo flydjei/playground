@@ -6,7 +6,8 @@
 <meta name="description" content="CIDR 서브넷, IP 범위를 개별 IP 목록으로 펼쳐주는 계산기">
 <title>서브넷 IP 목록 계산기</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="assets/common.css">
+<link rel="stylesheet" href="assets/tools.css">
 </head>
 <body>
 
@@ -58,7 +59,7 @@
 
 <div id="status" class="status" role="status" aria-live="polite"></div>
 
-<script src="common.js"></script>
+<script src="assets/common.js"></script>
 <script>
 const MAX_PER_ENTRY = 65536; // 항목당 최대 IP 개수 (2^16, /16 대역까지 허용)
 const MAX_TOTAL = 200000;    // 전체 합산 최대 IP 개수 (중복 제거 시에는 제거 후 기준)
