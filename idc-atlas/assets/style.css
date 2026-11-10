@@ -1,30 +1,43 @@
 /* ==========================================================================
    IDC Atlas prototype — design tokens
-   색 · 글꼴 · 모서리 값은 playground 공통 토큰(../assets/common.css)을 그대로 쓴다.
-   여기서는 이 앱의 기존 변수 이름을 공통 토큰에 연결하고, 이 앱에만 필요한 값만 정의한다.
+   이 앱은 다른 폴더의 파일에 의존하지 않는다. 색 · 글꼴 · 모서리 값은 모두 여기서 정의한다.
+   테마는 app.js 가 <html data-theme="light|dark"> 로 항상 명시한다 (저장값 → 시스템 설정 순).
    ========================================================================== */
 :root {
-  /* 공통 토큰에서 그대로 오는 것: --bg --surface --border --text
-     --accent --accent-hover --accent-fg --accent-soft --accent-line
-     --ok --warn --info --ok-soft --warn-soft --info-soft */
-  --surface-2:     var(--field-ro-bg);
-  --surface-3:     var(--neutral);
-  --border-strong: var(--field-border);
-  --text-2:        var(--text-sub);
-  --text-3:        var(--text-muted);
+  color-scheme: light;
 
-  /* 공통 --danger 는 채움 전용(글자는 흰색)이지만, 이 앱은 --danger 를 글자색으로도 쓰므로
-     테마에 따라 밝기가 바뀌는 --error 에 연결한다. */
-  --danger:        var(--error);
-  --danger-soft:   var(--error-soft);
+  --font-sans: "Segoe UI", "Malgun Gothic", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans CJK KR", sans-serif;
+  --mono: Consolas, "SF Mono", Menlo, "Courier New", monospace;
 
-  --r-sm: var(--radius);
-  --r:    var(--radius-panel);
-  --r-lg: var(--radius-panel);
+  --bg:            #f4f5f7;
+  --surface:       #ffffff;
+  --surface-2:     #fafafa;
+  --surface-3:     #e7e9ee;
+  --field-bg:      #ffffff;
+  --border:        #d9dbe0;
+  --border-strong: #c4c7ce;
+  --text:          #1c1c1e;
+  --text-2:        #555555;
+  --text-3:        #6b6b6b;
 
-  --mono: var(--font-mono);
+  --accent:        #2f62e0;
+  --accent-hover:  #2552c4;
+  --accent-fg:     #ffffff;
+  --accent-soft:   #eaf0ff;
+  --accent-line:   #c2d2f7;
 
-  /* 이 앱 전용 */
+  --ok:            #1a7f37;
+  --ok-soft:       #e6f4ea;
+  --warn:          #9a6200;
+  --warn-soft:     #fdf3e0;
+  --danger:        #c0392b;
+  --danger-soft:   #fdeceb;
+  --info:          #0b6fb0;
+  --info-soft:     #e7f3fb;
+
+  --toast-bg:      #1c1c1e;
+  --toast-fg:      #ffffff;
+
   --rack-empty:    #f1f2f5;
   --rack-grid:     #dfe1e6;
 
@@ -32,12 +45,46 @@
   --shadow:    0 1px 3px rgba(16,24,40,.07), 0 10px 28px rgba(16,24,40,.07);
   --shadow-lg: 0 24px 64px rgba(16,24,40,.22);
 
+  --r-sm: 6px;
+  --r:    8px;
+  --r-lg: 8px;
+
   --sidebar-w: 236px;
   --topbar-h:  60px;
 }
 
-/* 테마는 app.js 가 <html data-theme> 로 항상 명시한다 (저장값 → 시스템 설정 순) */
 [data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg:            #1e1f22;
+  --surface:       #2a2b2e;
+  --surface-2:     #232427;
+  --surface-3:     #3a3b3e;
+  --field-bg:      #1e1f22;
+  --border:        #3a3b3e;
+  --border-strong: #4a4b4f;
+  --text:          #e6e6e6;
+  --text-2:        #aaaaaa;
+  --text-3:        #a0a0a0;
+
+  --accent:        #8ab0ff;
+  --accent-hover:  #a6c2ff;
+  --accent-fg:     #1c1c1e;
+  --accent-soft:   #33405e;
+  --accent-line:   #45568a;
+
+  --ok:            #4cc38a;
+  --ok-soft:       #1f3329;
+  --warn:          #f0b04a;
+  --warn-soft:     #3a2f1a;
+  --danger:        #ff6b5b;
+  --danger-soft:   #3f2424;
+  --info:          #56b6ea;
+  --info-soft:     #1c3140;
+
+  --toast-bg:      #e6e6e6;
+  --toast-fg:      #1c1c1e;
+
   --rack-empty:    #222326;
   --rack-grid:     #34353a;
 
@@ -49,10 +96,17 @@
 /* ==========================================================================
    Base
    ========================================================================== */
-/* box-sizing, body 의 글꼴 · 배경 · 글자색은 공통 common.css 에서 온다 */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
 html, body { height: 100%; }
 
 body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -117,7 +171,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
 .nav-item {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 11px;
-  border-radius: var(--radius);
+  border-radius: var(--r-sm);
   color: var(--text-2);
   font-size: 13.5px; font-weight: 600;
   text-decoration: none;
@@ -142,7 +196,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
   display: flex; align-items: center; gap: 8px;
   padding: 9px 11px; margin-top: 2px;
   font-size: 12.5px; color: var(--text-2); cursor: pointer;
-  border-radius: var(--radius);
+  border-radius: var(--r-sm);
 }
 .ro-toggle:hover { background: var(--surface-3); }
 .ro-toggle input { accent-color: var(--accent); }
@@ -186,7 +240,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
   width: 34px; height: 34px;
   display: grid; place-items: center;
   background: transparent; border: 1px solid transparent;
-  border-radius: var(--radius); cursor: pointer; font-size: 15px;
+  border-radius: var(--r-sm); cursor: pointer; font-size: 15px;
 }
 .icon-btn:hover { background: var(--surface-3); }
 
@@ -241,7 +295,7 @@ input, select, textarea, button { font: inherit; color: inherit; }
   padding: 7px 13px;
   background: var(--surface);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
+  border-radius: var(--r-sm);
   font-size: 13px; font-weight: 600;
   cursor: pointer;
   text-decoration: none; color: var(--text);
@@ -260,8 +314,8 @@ input, select, textarea, button { font: inherit; color: inherit; }
 .btn[disabled] { opacity: .45; pointer-events: none; }
 .btn-group { display: inline-flex; }
 .btn-group .btn { border-radius: 0; margin-left: -1px; }
-.btn-group .btn:first-child { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }
-.btn-group .btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.btn-group .btn:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); margin-left: 0; }
+.btn-group .btn:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .btn-group .btn.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); z-index: 1; }
 
 /* ==========================================================================
@@ -394,7 +448,7 @@ table.tbl td .sub { display: block; font-size: 11px; color: var(--text-3); }
 select.inp, input.inp, textarea.inp {
   background: var(--field-bg);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
+  border-radius: var(--r-sm);
   padding: 6px 9px;
   font-size: 13px;
   min-width: 0;
@@ -597,7 +651,7 @@ textarea.inp { resize: vertical; min-height: 70px; line-height: 1.5; }
 .tabs a {
   padding: 7px 13px; font-size: 13px; font-weight: 600; color: var(--text-2);
   border: 1px solid transparent; border-bottom: none;
-  border-radius: var(--radius) var(--radius) 0 0; margin-bottom: -1px;
+  border-radius: var(--r-sm) var(--r-sm) 0 0; margin-bottom: -1px;
 }
 .tabs a:hover { color: var(--text); text-decoration: none; background: var(--surface-3); }
 .tabs a.on { background: var(--surface); border-color: var(--border); color: var(--accent); }
@@ -612,7 +666,7 @@ textarea.inp { resize: vertical; min-height: 70px; line-height: 1.5; }
 .toast-root { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 90; display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .toast {
   background: var(--toast-bg); color: var(--toast-fg);
-  padding: 10px 16px; border-radius: var(--radius); font-size: 13px;
+  padding: 10px 16px; border-radius: var(--r-sm); font-size: 13px;
   box-shadow: var(--shadow-lg);
   animation: toastin .18s ease;
 }
@@ -656,7 +710,7 @@ body.ro .readonly-lock { display: inline-flex; }
    Print — 원본 RackManager의 인쇄 전용 CSS를 재현
    ========================================================================== */
 @media print {
-  :root, :root[data-theme] { --bg: #fff; --surface: #fff; --surface-2: #fff; --surface-3: #fff; --border: #bbb; --text: #000; --text-2: #333; --text-3: #555; }
+  :root, [data-theme] { --bg: #fff; --surface: #fff; --surface-2: #fff; --surface-3: #fff; --border: #bbb; --text: #000; --text-2: #333; --text-3: #555; }
   .sidebar, .topbar, .toolbar, .filters, .scrim, .toast-root, .page-head .actions,
   .rowbtn, .btn, .tabs, .slot::after { display: none !important; }
   .shell { display: block; }

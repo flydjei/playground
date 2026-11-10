@@ -4,13 +4,17 @@
 
 ## playground/
 
-- [ip-subnet-calculator.html](https://flydjei.github.io/playground/ip-subnet-calculator.html) — IP 서브넷 계산기
-- [ip-extractor.html](https://flydjei.github.io/playground/ip-extractor.html) — IP 추출기
-- [special-characters.html](https://flydjei.github.io/playground/special-characters.html) — 한글 자음 + 한자 특수문자표
+- [toolbox/](https://flydjei.github.io/playground/toolbox/) — Toolbox: 작은 브라우저 도구 모음
 - [idc-atlas/](https://flydjei.github.io/playground/idc-atlas/) — IDC Atlas: IDC 랙 · IP · 장비 통합 관리 프로토타입
-- `assets/` — 공통 디자인 파일
-  - `common.css` — 모든 페이지(도구 3종 · IDC Atlas)가 함께 쓰는 디자인 토큰(색 · 글꼴 · 모서리)과 기본 스타일, 라이트/다크 테마
-  - `tools.css` · `common.js` — 도구 3종의 공통 컴포넌트와 동작(복사, 토스트 알림, 버튼 피드백, 저장)
+
+두 폴더는 서로의 파일을 참조하지 않는 별개의 유틸리티라서 각각 따로 수정·배포·이동할 수 있음.
+
+### toolbox/ — Toolbox
+
+- [ip-subnet-calculator.html](https://flydjei.github.io/playground/toolbox/ip-subnet-calculator.html) — 서브넷 IP 계산기
+- [ip-extractor.html](https://flydjei.github.io/playground/toolbox/ip-extractor.html) — IP 추출기
+- [special-characters.html](https://flydjei.github.io/playground/toolbox/special-characters.html) — 한글 자음 + 한자 특수문자표
+- `assets/toolbox.css` · `assets/toolbox.js` — 세 도구가 함께 쓰는 디자인 토큰·컴포넌트와 동작(복사, 토스트 알림, 버튼 피드백, 저장)
 
 ### idc-atlas/ — IDC Atlas
 
