@@ -18,13 +18,15 @@
     --field-bg: #ffffff;
     --field-ro-bg: #fafafa;
     --field-border: #ccc;
-    --accent: #4a7dfc;
-    --accent-hover: #3a6ae0;
+    --accent: #2f62e0;
+    --accent-hover: #2552c4;
     --accent-disabled: #b7c2d9;
+    --focus: #2f62e0;
     --secondary-bg: #e7e9ee;
     --secondary-hover: #d9dce3;
     --secondary-fg: #1c1c1e;
-    --success: #2ecc71;
+    --success: #1e8449;
+    --danger: #c0392b;
     --error: #c0392b;
     --warn: #b9770e;
   }
@@ -40,6 +42,7 @@
       --field-ro-bg: #232427;
       --field-border: #444;
       --accent-disabled: #3d4658;
+      --focus: #7ea2ff;
       --secondary-bg: #3a3b3e;
       --secondary-hover: #46474b;
       --secondary-fg: #e6e6e6;
@@ -121,9 +124,12 @@
     color: var(--fg);
     border: 1px solid var(--field-border);
     border-radius: 6px;
-    outline: none;
   }
-  textarea:focus { border-color: var(--accent); }
+  textarea:focus-visible {
+    border-color: var(--focus);
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
   textarea[readonly] { background: var(--field-ro-bg); }
   .options {
     display: flex;
@@ -159,7 +165,7 @@
     touch-action: manipulation;
   }
   button:hover { background: var(--accent-hover); }
-  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   button:disabled { background: var(--accent-disabled); cursor: not-allowed; }
   button.secondary {
     flex: 0 0 auto;
@@ -168,7 +174,20 @@
   }
   button.secondary:hover { background: var(--secondary-hover); }
   button.secondary:disabled { opacity: .5; background: var(--secondary-bg); }
-  button.copied { background: var(--success); }
+  /* .secondary:hover 보다 우선하도록 :hover 상태까지 함께 선언 */
+  button.copied, button.copied:hover { background: var(--success); color: #fff; }
+  button.failed, button.failed:hover { background: var(--danger); color: #fff; }
+  .head-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+  .stale {
+    font-size: 12px;
+    color: var(--warn);
+    white-space: nowrap;
+  }
   .kbd-hint {
     font-size: 11px;
     font-weight: 400;
@@ -188,6 +207,8 @@
   #status li.error { color: var(--error); }
   #status li.warn { color: var(--warn); }
   #status code { font-family: "Consolas", "Courier New", monospace; }
+  #status details { margin-top: 6px; }
+  #status summary { cursor: pointer; }
 
   @media (max-width: 720px) {
     body {
@@ -216,8 +237,8 @@
 
 <h1>서브넷 IP 목록 계산기</h1>
 <p class="desc">
-  CIDR(<code>172.17.0.0/24</code>), 범위(<code>10.0.0.1-10.0.0.20</code>, <code>10.0.0.1-20</code>), 단일 IP를 입력하면 개별 IP 목록으로 펼쳐줍니다.
-  줄바꿈·쉼표·공백으로 여러 항목을 구분할 수 있습니다.
+  CIDR(<code>172.17.0.0/24</code>), 범위(<code>10.0.0.1-10.0.0.20</code>, <code>10.0.0.1~10.0.0.20</code>, <code>10.0.0.1-20</code>), 단일 IP를 입력하면 개별 IP 목록으로 펼쳐줍니다.
+  줄바꿈·쉼표·세미콜론·공백으로 여러 항목을 구분할 수 있습니다.
 </p>
 
 <div class="container">
@@ -229,7 +250,7 @@
     <textarea id="input" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"
       placeholder="172.17.0.0/24&#10;10.0.0.0/30&#10;192.168.1.10-20&#10;192.168.1.5"></textarea>
     <div class="options">
-      <label><input type="checkbox" id="excludeEdges"> 네트워크/브로드캐스트 주소 제외</label>
+      <label><input type="checkbox" id="excludeEdges"> 네트워크/브로드캐스트 주소 제외 (CIDR 항목만)</label>
       <label><input type="checkbox" id="dedupe" checked> 중복 제거 및 정렬</label>
     </div>
     <div class="actions">
@@ -241,7 +262,10 @@
   <div class="column">
     <div class="column-head">
       <h2><label for="output">개별 IP 목록</label></h2>
-      <span class="count" id="outputCount">0개</span>
+      <span class="head-meta">
+        <span class="stale" id="staleHint" hidden>입력 변경됨 · 다시 계산 필요</span>
+        <span class="count" id="outputCount">0개</span>
+      </span>
     </div>
     <textarea id="output" readonly spellcheck="false" placeholder="계산 결과가 여기에 표시됩니다."></textarea>
     <div class="actions">
@@ -255,7 +279,8 @@
 
 <script>
 const MAX_PER_ENTRY = 65536; // 항목당 최대 IP 개수 (2^16, /16 대역까지 허용)
-const MAX_TOTAL = 200000;    // 전체 합산 최대 IP 개수
+const MAX_TOTAL = 200000;    // 전체 합산 최대 IP 개수 (중복 제거 시에는 제거 후 기준)
+const MAX_INFO_INLINE = 10;  // 항목별 안내가 이보다 많으면 접어서 표시
 
 const $ = (id) => document.getElementById(id);
 const inputEl = $('input');
@@ -269,13 +294,17 @@ const excludeEdgesEl = $('excludeEdges');
 const dedupeEl = $('dedupe');
 const inputCountEl = $('inputCount');
 const outputCountEl = $('outputCount');
+const staleHintEl = $('staleHint');
+
+let lastCalcInput = null; // 마지막으로 계산한 입력값 (계산 전에는 null)
 
 function ipToLong(ip) {
   const parts = ip.split('.');
   if (parts.length !== 4) return null;
   let result = 0;
   for (const p of parts) {
-    if (!/^\d{1,3}$/.test(p)) return null;
+    // 선행 0(예: 010)은 도구에 따라 8진수로 해석될 수 있어 허용하지 않음
+    if (!/^(0|[1-9]\d{0,2})$/.test(p)) return null;
     const n = Number(p);
     if (n > 255) return null;
     result = result * 256 + n;
@@ -298,12 +327,23 @@ function maskFromPrefix(prefix) {
 }
 
 function splitEntries(text) {
-  return text.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);
+  // "10.0.0.1 - 10.0.0.20", "10.0.0.0 /24" 처럼 구분 기호 주변에 공백이 있어도
+  // 한 항목으로 인식되도록, 같은 줄 안의 공백을 먼저 제거한다.
+  return text
+    .replace(/[ \t]*([-~/])[ \t]*/g, '$1')
+    .split(/[\s,;]+/)
+    .filter(Boolean);
 }
 
-// 한 항목을 파싱해 { source, start, end, network, broadcast, prefix } 반환
+function ipError(entry, ip) {
+  return new Error(/(^|\.)0\d/.test(ip)
+    ? `선행 0이 포함된 IP 주소는 허용되지 않습니다: "${entry}"`
+    : `잘못된 IP 주소: "${entry}"`);
+}
+
+// 한 항목을 파싱해 { source, kind, start, end, (network, broadcast, prefix, hostBits) } 반환
 //  - CIDR:  172.17.0.0/24
-//  - 범위:  10.0.0.1-10.0.0.20  또는  10.0.0.1-20 (마지막 옥텟 축약)
+//  - 범위:  10.0.0.1-10.0.0.20, 10.0.0.1~10.0.0.20  또는  10.0.0.1-20 (마지막 옥텟 축약)
 //  - 단일:  192.168.1.5
 function parseEntry(entry) {
   if (entry.includes('/')) {
@@ -312,19 +352,22 @@ function parseEntry(entry) {
     const prefix = Number(m[2]);
     if (prefix > 32) throw new Error(`잘못된 프리픽스(0~32): "${entry}"`);
     const ipLong = ipToLong(m[1]);
-    if (ipLong === null) throw new Error(`잘못된 IP 주소: "${entry}"`);
+    if (ipLong === null) throw ipError(entry, m[1]);
 
     const mask = maskFromPrefix(prefix);
     const network = (ipLong & mask) >>> 0;
     const broadcast = (network | (~mask >>> 0)) >>> 0;
-    return { source: entry, kind: 'cidr', prefix, network, broadcast, start: network, end: broadcast };
+    return {
+      source: entry, kind: 'cidr', prefix, network, broadcast,
+      start: network, end: broadcast, hostBits: ipLong !== network
+    };
   }
 
-  if (entry.includes('-')) {
-    const [a, b, ...rest] = entry.split('-');
+  if (/[-~]/.test(entry)) {
+    const [a, b, ...rest] = entry.split(/[-~]/);
     if (rest.length) throw new Error(`잘못된 범위 표기: "${entry}"`);
     const start = ipToLong(a);
-    if (start === null) throw new Error(`잘못된 IP 주소: "${entry}"`);
+    if (start === null) throw ipError(entry, a);
 
     let end;
     if (/^\d{1,3}$/.test(b)) {
@@ -334,13 +377,13 @@ function parseEntry(entry) {
     } else {
       end = ipToLong(b);
     }
-    if (end === null) throw new Error(`잘못된 IP 주소: "${entry}"`);
+    if (end === null) throw ipError(entry, b);
     if (end < start) throw new Error(`범위의 끝이 시작보다 작습니다: "${entry}"`);
     return { source: entry, kind: 'range', start, end };
   }
 
   const ipLong = ipToLong(entry);
-  if (ipLong === null) throw new Error(`잘못된 IP 주소: "${entry}"`);
+  if (ipLong === null) throw ipError(entry, entry);
   return { source: entry, kind: 'single', start: ipLong, end: ipLong };
 }
 
@@ -350,19 +393,54 @@ function escapeHtml(s) {
 
 function fmt(n) { return n.toLocaleString(); }
 
-function describe(parsed, count) {
+// start/end 는 실제로 출력에 사용된 범위 (네트워크/브로드캐스트 제외 반영)
+function describe(parsed, start, end, edgesExcluded) {
+  const count = end - start + 1;
+  const src = `<code>${escapeHtml(parsed.source)}</code>`;
   if (parsed.kind === 'cidr') {
-    return `<code>${escapeHtml(parsed.source)}</code> → ${longToIp(parsed.network)} ~ ${longToIp(parsed.broadcast)}` +
-      ` (마스크 ${longToIp(maskFromPrefix(parsed.prefix))}, ${fmt(count)}개)`;
+    let html = `${src} → ${longToIp(start)} ~ ${longToIp(end)}` +
+      ` (마스크 ${longToIp(maskFromPrefix(parsed.prefix))}, ${fmt(count)}개` +
+      (edgesExcluded ? ', 네트워크/브로드캐스트 제외' : '') + ')';
+    if (parsed.hostBits) {
+      html = `⚠ ${html} — 호스트 비트가 설정되어 있어 <code>${longToIp(parsed.network)}/${parsed.prefix}</code> 로 보정했습니다.`;
+    }
+    return html;
   }
   if (parsed.kind === 'range') {
-    return `<code>${escapeHtml(parsed.source)}</code> → ${longToIp(parsed.start)} ~ ${longToIp(parsed.end)} (${fmt(count)}개)`;
+    return `${src} → ${longToIp(start)} ~ ${longToIp(end)} (${fmt(count)}개)`;
   }
   return null;
 }
 
+// 정렬·병합된 구간 목록(merged)에 [start, end] 를 합친다.
+// 새로 추가되는 IP 개수를 반환하며, remaining 을 넘으면 아무것도 바꾸지 않고 -1 을 반환한다.
+function addInterval(merged, start, end, remaining) {
+  // start 와 겹치거나 바로 맞닿는 첫 구간을 이진 탐색
+  let lo = 0, hi = merged.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (merged[mid][1] < start - 1) lo = mid + 1; else hi = mid;
+  }
+  let to = lo, overlap = 0, ns = start, ne = end;
+  while (to < merged.length && merged[to][0] <= end + 1) {
+    const [s, e] = merged[to];
+    overlap += Math.max(0, Math.min(end, e) - Math.max(start, s) + 1);
+    if (s < ns) ns = s;
+    if (e > ne) ne = e;
+    to++;
+  }
+  const added = (end - start + 1) - overlap;
+  if (added > remaining) return -1;
+  merged.splice(lo, to - lo, [ns, ne]);
+  return added;
+}
+
 function updateInputCount() {
   inputCountEl.textContent = `${fmt(splitEntries(inputEl.value).length)}개 항목`;
+}
+
+function updateStale() {
+  staleHintEl.hidden = lastCalcInput === null || inputEl.value === lastCalcInput;
 }
 
 function setOutput(ips) {
@@ -371,13 +449,21 @@ function setOutput(ips) {
   copyBtn.disabled = downloadBtn.disabled = ips.length === 0;
 }
 
-function calculate() {
+function renderList(notes) {
+  return `<ul>${notes.map(n => `<li class="${n.cls}">${n.html}</li>`).join('')}</ul>`;
+}
+
+function calculate({ scroll = true } = {}) {
   const entries = splitEntries(inputEl.value);
   const excludeEdges = excludeEdgesEl.checked;
   const dedupe = dedupeEl.checked;
-  const longs = [];
-  const notes = []; // { cls, html }
+  const accepted = []; // 입력 순서 그대로의 [start, end] (중복 제거 안 할 때 사용)
+  const merged = [];   // 정렬·병합된 [start, end] (중복 제거 시 사용)
+  const issues = [];   // 오류·경고 { cls, html }
+  const infos = [];    // 항목별 안내 { cls, html }
   let errorCount = 0;
+  let total = 0;       // 채택된 항목의 IP 개수 합 (중복 포함)
+  let unique = 0;      // 병합 후 고유 IP 개수
 
   for (const entry of entries) {
     let parsed;
@@ -385,100 +471,138 @@ function calculate() {
       parsed = parseEntry(entry);
     } catch (err) {
       errorCount++;
-      notes.push({ cls: 'error', html: `✖ ${escapeHtml(err.message)}` });
+      issues.push({ cls: 'error', html: `✖ ${escapeHtml(err.message)}` });
       continue;
     }
 
     let { start, end } = parsed;
     // /31, /32 는 네트워크/브로드캐스트 구분이 없으므로 제외하지 않음 (RFC 3021)
-    if (excludeEdges && parsed.kind === 'cidr' && parsed.prefix <= 30) {
+    const edgesExcluded = excludeEdges && parsed.kind === 'cidr' && parsed.prefix <= 30;
+    if (edgesExcluded) {
       start += 1;
       end -= 1;
     }
     const count = end - start + 1;
+    const src = `<code>${escapeHtml(entry)}</code>`;
 
     if (count > MAX_PER_ENTRY) {
-      notes.push({ cls: 'warn', html: `⚠ <code>${escapeHtml(entry)}</code> 는 IP ${fmt(count)}개로 너무 많아 건너뜁니다. (항목당 최대 ${fmt(MAX_PER_ENTRY)}개)` });
+      issues.push({ cls: 'warn', html: `⚠ ${src} 는 IP ${fmt(count)}개로 너무 많아 건너뜁니다. (항목당 최대 ${fmt(MAX_PER_ENTRY)}개)` });
       continue;
     }
-    if (longs.length + count > MAX_TOTAL) {
-      notes.push({ cls: 'warn', html: `⚠ 전체 IP 개수가 ${fmt(MAX_TOTAL)}개를 초과하여 <code>${escapeHtml(entry)}</code> 부터는 건너뜁니다.` });
-      break;
+
+    // 한도를 넘는 항목만 건너뛰고, 이후 항목은 계속 검사한다.
+    const overLimit = { cls: 'warn', html: `⚠ ${src} 를 추가하면 전체 IP 개수가 ${fmt(MAX_TOTAL)}개를 초과하여 건너뜁니다.` };
+    if (dedupe) {
+      const added = addInterval(merged, start, end, MAX_TOTAL - unique);
+      if (added < 0) { issues.push(overLimit); continue; }
+      unique += added;
+    } else {
+      if (total + count > MAX_TOTAL) { issues.push(overLimit); continue; }
+      accepted.push([start, end]);
     }
+    total += count;
 
-    for (let cur = start; cur <= end; cur++) longs.push(cur);
-
-    const info = describe(parsed, count);
-    if (info) notes.push({ cls: '', html: info });
+    const info = describe(parsed, start, end, edgesExcluded);
+    if (info) (parsed.hostBits ? issues : infos).push({ cls: parsed.hostBits ? 'warn' : '', html: info });
   }
 
-  let finalLongs = longs;
-  let removed = 0;
-  if (dedupe) {
-    finalLongs = Array.from(new Set(longs)).sort((a, b) => a - b);
-    removed = longs.length - finalLongs.length;
+  const ips = [];
+  for (const [s, e] of dedupe ? merged : accepted) {
+    for (let cur = s; cur <= e; cur++) ips.push(longToIp(cur));
   }
+  const removed = dedupe ? total - unique : 0;
 
-  setOutput(finalLongs.map(longToIp));
+  setOutput(ips);
+  lastCalcInput = inputEl.value;
+  updateStale();
 
   let summary = entries.length
-    ? `총 ${fmt(finalLongs.length)}개의 IP가 생성되었습니다.`
+    ? `총 ${fmt(ips.length)}개의 IP가 생성되었습니다.`
     : '입력된 항목이 없습니다.';
   if (removed) summary += ` (중복 ${fmt(removed)}개 제거)`;
   if (errorCount) summary += ` · 오류 ${fmt(errorCount)}건`;
 
-  statusEl.innerHTML =
-    `<div class="summary">${summary}</div>` +
-    (notes.length ? `<ul>${notes.map(n => `<li class="${n.cls}">${n.html}</li>`).join('')}</ul>` : '');
+  let html = `<div class="summary">${summary}</div>`;
+  if (issues.length) html += renderList(issues);
+  if (infos.length > MAX_INFO_INLINE) {
+    html += `<details><summary>항목별 상세 ${fmt(infos.length)}건</summary>${renderList(infos)}</details>`;
+  } else if (infos.length) {
+    html += renderList(infos);
+  }
+  statusEl.innerHTML = html;
 
-  // 모바일(세로 배치)에서는 결과 영역이 화면 아래에 있으므로 자동으로 스크롤
-  if (window.matchMedia('(max-width: 720px)').matches) {
-    outputEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // 모바일(세로 배치)에서는 결과 영역이 화면 아래에 있으므로 자동으로 스크롤.
+  // 결과가 없으면(전부 오류 등) 결과창 대신 상태 메시지로 이동한다.
+  if (scroll && entries.length && window.matchMedia('(max-width: 720px)').matches) {
+    (ips.length ? outputEl : statusEl).scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
-function flash(btn, text) {
+function flash(btn, text, cls = 'copied') {
   const original = btn.dataset.label || btn.textContent;
   btn.dataset.label = original;
   btn.textContent = text;
-  btn.classList.add('copied');
+  btn.classList.remove('copied', 'failed');
+  btn.classList.add(cls);
   clearTimeout(btn._timer);
   btn._timer = setTimeout(() => {
     btn.textContent = original;
-    btn.classList.remove('copied');
+    btn.classList.remove(cls);
   }, 1200);
 }
 
-calcBtn.addEventListener('click', calculate);
+calcBtn.addEventListener('click', () => calculate());
 
-inputEl.addEventListener('input', updateInputCount);
-inputEl.addEventListener('keydown', (e) => {
+inputEl.addEventListener('input', () => {
+  updateInputCount();
+  updateStale();
+});
+
+// 입력창 밖(체크박스 등)에 포커스가 있어도 단축키가 동작하도록 문서 전체에서 처리
+document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
     calculate();
   }
 });
 
+// 이미 계산한 적이 있으면 옵션 변경 시 바로 다시 계산
+for (const el of [excludeEdgesEl, dedupeEl]) {
+  el.addEventListener('change', () => {
+    if (lastCalcInput !== null) calculate({ scroll: false });
+  });
+}
+
 clearBtn.addEventListener('click', () => {
   inputEl.value = '';
   setOutput([]);
   statusEl.innerHTML = '';
+  lastCalcInput = null;
+  updateStale();
   updateInputCount();
   inputEl.focus();
 });
 
 copyBtn.addEventListener('click', async () => {
   if (!outputEl.value) return;
+  let ok = true;
   try {
     await navigator.clipboard.writeText(outputEl.value);
   } catch (err) {
-    outputEl.removeAttribute('readonly');
-    outputEl.select();
-    document.execCommand('copy');
-    outputEl.setAttribute('readonly', '');
-    window.getSelection()?.removeAllRanges();
+    // Clipboard API 를 쓸 수 없는 환경용 대체 경로. 이것도 실패하면 실패로 표시한다.
+    try {
+      outputEl.removeAttribute('readonly');
+      outputEl.select();
+      ok = document.execCommand('copy');
+    } catch (err2) {
+      ok = false;
+    } finally {
+      outputEl.setAttribute('readonly', '');
+      window.getSelection()?.removeAllRanges();
+    }
   }
-  flash(copyBtn, '복사됨!');
+  if (ok) flash(copyBtn, '복사됨!');
+  else flash(copyBtn, '복사 실패', 'failed');
 });
 
 downloadBtn.addEventListener('click', () => {
