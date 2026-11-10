@@ -1,0 +1,348 @@
+/* 도구 페이지(서브넷 IP 계산기 · IP 추출기 · 특수문자표)가 함께 쓰는 디자인 토큰과 공통 컴포넌트 */
+
+:root {
+  color-scheme: light dark;
+
+  --font-sans: "Segoe UI", "Malgun Gothic", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans CJK KR", sans-serif;
+  --font-mono: Consolas, "SF Mono", Menlo, "Courier New", monospace;
+
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --text: #1c1c1e;
+  --text-sub: #555555;
+  --text-muted: #6b6b6b;
+  --heading: #444444;
+  --border: #d9dbe0;
+  --grid-line: #e3e5e9;
+
+  --field-bg: #ffffff;
+  --field-ro-bg: #fafafa;
+  --field-border: #c4c7ce;
+
+  /* accent: 채움색(버튼·배지), accent-fg: 그 위의 글자색. 링크·포커스 링도 accent 를 그대로 쓴다. */
+  --accent: #2f62e0;
+  --accent-hover: #2552c4;
+  --accent-fg: #ffffff;
+  --accent-soft: #eaf0ff;
+  --accent-disabled: #b7c2d9;
+  --accent-disabled-fg: #ffffff;
+
+  --neutral: #e7e9ee;
+  --neutral-hover: #d9dce3;
+
+  /* success·danger 는 채움색(글자는 흰색), error·warn 은 본문 위 글자색 */
+  --success: #1a7f37;
+  --danger: #c0392b;
+  --error: #c0392b;
+  --warn: #9a6200;
+
+  --toast-bg: #1c1c1e;
+  --toast-fg: #ffffff;
+
+  --radius: 6px;
+  --radius-panel: 8px;
+  --page-pad: 24px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1f22;
+    --surface: #2a2b2e;
+    --text: #e6e6e6;
+    --text-sub: #aaaaaa;
+    --text-muted: #a0a0a0;
+    --heading: #bbbbbb;
+    --border: #3a3b3e;
+    --grid-line: #3a3b3e;
+
+    --field-bg: #1e1f22;
+    --field-ro-bg: #232427;
+    --field-border: #4a4b4f;
+
+    --accent: #8ab0ff;
+    --accent-hover: #a6c2ff;
+    --accent-fg: #1c1c1e;
+    --accent-soft: #33405e;
+    --accent-disabled: #3d4658;
+    --accent-disabled-fg: #8f97a8;
+
+    --neutral: #3a3b3e;
+    --neutral-hover: #46474b;
+
+    --error: #ff6b5b;
+    --warn: #f0b04a;
+
+    --toast-bg: #e6e6e6;
+    --toast-fg: #1c1c1e;
+  }
+}
+
+/* ---------- 기본 ---------- */
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: var(--page-pad);
+  padding-left: max(var(--page-pad), env(safe-area-inset-left));
+  padding-right: max(var(--page-pad), env(safe-area-inset-right));
+  background: var(--bg);
+  color: var(--text);
+}
+h1 {
+  font-size: 20px;
+  margin: 0 0 6px;
+}
+.desc {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+code { font-family: var(--font-mono); }
+.desc code,
+kbd {
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.desc code { background: var(--neutral); }
+kbd {
+  font: inherit;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+/* ---------- 도구 간 이동 메뉴 ---------- */
+
+.tool-nav {
+  display: flex;
+  gap: 4px;
+  margin: -8px 0 18px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+.tool-nav::-webkit-scrollbar { display: none; }
+.tool-nav a {
+  flex: none;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--text-sub);
+  border-bottom: 2px solid transparent;
+}
+.tool-nav a:hover { color: var(--text); }
+.tool-nav a[aria-current] { color: var(--accent); border-bottom-color: var(--accent); }
+.tool-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ---------- 패널 ---------- */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  padding: 16px;
+}
+.panel h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--heading);
+}
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.head-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.count {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.stale-hint {
+  font-size: 12px;
+  color: var(--warn);
+  white-space: nowrap;
+}
+
+/* 입력 → 결과 2단 구성 (계산기 · 추출기) */
+.panes {
+  display: flex;
+  gap: 20px;
+  height: 65vh;
+  min-height: 420px;
+}
+.panes .panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 입력 필드 ---------- */
+
+.field {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius);
+}
+.field:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.field::placeholder { color: var(--text-muted); opacity: 1; }
+textarea.field {
+  flex: 1;
+  resize: none;
+  padding: 10px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+textarea.field[readonly] { background: var(--field-ro-bg); }
+/* 입력이 바뀌어 더 이상 최신이 아닌 결과 */
+textarea.field.stale { opacity: .55; }
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  min-height: 28px;
+}
+.options label.disabled { opacity: .5; cursor: not-allowed; }
+.options input { margin: 0; width: 16px; height: 16px; accent-color: var(--accent); }
+
+/* ---------- 버튼 ---------- */
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.btn {
+  flex: 1;
+  min-height: 40px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: var(--accent);
+  color: var(--accent-fg);
+  touch-action: manipulation;
+}
+.btn:hover { background: var(--accent-hover); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn:disabled {
+  background: var(--accent-disabled);
+  color: var(--accent-disabled-fg);
+  cursor: not-allowed;
+}
+.btn.secondary {
+  flex: 0 0 auto;
+  background: var(--neutral);
+  color: var(--text);
+}
+.btn.secondary:hover { background: var(--neutral-hover); }
+.btn.secondary:disabled { opacity: .5; background: var(--neutral); color: var(--text); }
+/* .secondary:hover 보다 뒤에 두어, 클릭 직후(호버 상태)에도 피드백 색이 보이게 함 */
+.btn.copied, .btn.copied:hover,
+.copied { background: var(--success); color: #fff; }
+.btn.failed, .btn.failed:hover { background: var(--danger); color: #fff; }
+.kbd-hint {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: .75;
+  margin-left: 4px;
+}
+
+/* ---------- 결과 요약 (패널 아래에 남는 안내) ---------- */
+
+.status {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-sub);
+  line-height: 1.6;
+  min-height: 18px;
+  overflow-wrap: anywhere;
+}
+.status .summary { color: var(--text); font-weight: 600; }
+.status ul { margin: 6px 0 0; padding-left: 18px; }
+.status li.error { color: var(--error); }
+.status li.warn { color: var(--warn); }
+.status details { margin-top: 6px; }
+.status summary { cursor: pointer; }
+
+/* ---------- 토스트 (복사 · 저장 등 방금 한 동작의 결과) ---------- */
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 20;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--toast-fg);
+  background: var(--toast-bg);
+  border-radius: var(--radius);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+  overflow-wrap: anywhere;
+}
+#toast.show { opacity: .95; }
+#toast.error { color: #fff; background: var(--danger); }
+
+/* ---------- 모바일 ---------- */
+
+@media (max-width: 720px) {
+  :root { --page-pad: 16px; }
+  h1 { font-size: 18px; }
+  .panel { padding: 14px; }
+  .panes {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    gap: 14px;
+  }
+  .panes #input { height: 30vh; min-height: 160px; flex: none; }
+  .panes #output { height: 45vh; min-height: 220px; flex: none; }
+  /* iOS Safari 는 16px 미만 입력창 포커스 시 자동 확대되므로 16px 로 고정 */
+  .field, textarea.field { font-size: 16px; }
+  .btn { min-height: 44px; }
+  .kbd-hint { display: none; }
+}
