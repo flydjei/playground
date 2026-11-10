@@ -18,13 +18,15 @@
     --field-bg: #ffffff;
     --field-ro-bg: #fafafa;
     --field-border: #ccc;
-    --accent: #4a7dfc;
-    --accent-hover: #3a6ae0;
+    --accent: #2f62e0;
+    --accent-hover: #2552c4;
+    --focus: #2f62e0;
     --accent-disabled: #b7c2d9;
     --secondary-bg: #e7e9ee;
     --secondary-hover: #d9dce3;
     --secondary-fg: #1c1c1e;
-    --success: #2ecc71;
+    --success: #1e8449;
+    --danger: #c0392b;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -37,6 +39,7 @@
       --field-bg: #1e1f22;
       --field-ro-bg: #232427;
       --field-border: #444;
+      --focus: #7ea2ff;
       --accent-disabled: #3d4658;
       --secondary-bg: #3a3b3e;
       --secondary-hover: #46474b;
@@ -111,10 +114,11 @@
     color: var(--fg);
     border: 1px solid var(--field-border);
     border-radius: 6px;
-    outline: none;
   }
-  textarea:focus { border-color: var(--accent); }
+  textarea:focus { border-color: var(--focus); }
+  textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
   textarea[readonly] { background: var(--field-ro-bg); }
+  textarea.stale { opacity: .55; }
   .options {
     display: flex;
     flex-wrap: wrap;
@@ -150,7 +154,7 @@
     touch-action: manipulation;
   }
   button:hover { background: var(--accent-hover); }
-  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   button:disabled { background: var(--accent-disabled); cursor: not-allowed; }
   button.secondary {
     flex: 0 0 auto;
@@ -159,7 +163,9 @@
   }
   button.secondary:hover { background: var(--secondary-hover); }
   button.secondary:disabled { opacity: .5; background: var(--secondary-bg); }
-  button.copied { background: var(--success); }
+  /* .secondary:hover 보다 뒤에 같은 우선순위로 두어, 클릭 직후(호버 상태)에도 피드백 색이 보이게 함 */
+  button.copied, button.copied:hover { background: var(--success); color: #fff; }
+  button.failed, button.failed:hover { background: var(--danger); color: #fff; }
   .kbd-hint {
     font-size: 11px;
     font-weight: 400;
@@ -216,7 +222,8 @@
       placeholder="1.234.78.200_순수관제&#10;192.168.0.2_텍스트&#10;텍스트으으으&#10;서버 10.0.0.1, 10.0.0.2 점검"></textarea>
     <div class="options">
       <label><input type="checkbox" id="collectMode"> IP만 모아보기 (한 줄의 여러 IP 모두 추출)</label>
-      <label id="dedupeLabel" class="disabled"><input type="checkbox" id="dedupe" disabled> 중복 제거 및 정렬</label>
+      <label class="disabled"><input type="checkbox" id="dedupe" disabled> 중복 제거</label>
+      <label class="disabled"><input type="checkbox" id="sortIps" disabled> 정렬</label>
       <label><input type="checkbox" id="keepCidr"> CIDR 표기(/24) 유지</label>
     </div>
     <div class="actions">
@@ -250,28 +257,29 @@ const clearBtn = $('clearBtn');
 const copyBtn = $('copyBtn');
 const downloadBtn = $('downloadBtn');
 const collectModeEl = $('collectMode');
-const dedupeEl = $('dedupe');
-const dedupeLabel = $('dedupeLabel');
 const keepCidrEl = $('keepCidr');
 const inputCountEl = $('inputCount');
 const outputCountEl = $('outputCount');
 
 // 앞뒤가 숫자/점으로 이어지지 않는 "a.b.c.d" 형태 (문장 끝 마침표 "1.2.3.4." 는 허용)
 // 뒤에 선택적으로 "/prefix" 가 붙을 수 있음
-const IP_RE = /(?<![\d.])(\d{1,3}(?:\.\d{1,3}){3})(?:\/(\d{1,2}))?(?!\d|\.\d)/g;
+// lookbehind 는 Safari 16.4 미만에서 문법 오류가 나므로, 앞 글자를 직접 소비하는 방식으로 검사
+const IP_RE = /(^|[^\d.])(\d{1,3}(?:\.\d{1,3}){3})(?:\/(\d{1,2}))?(?!\d|\.\d)/g;
 
-function isValidIp(ip) {
-  return ip.split('.').every(p => Number(p) <= 255);
-}
-
-// 한 줄에서 유효한 IPv4 주소를 모두 찾아 배열로 반환
+// 한 줄에서 유효한 IPv4 주소를 모두 찾아 { text, badPrefix } 배열로 반환
+// 옥텟의 앞자리 0 은 제거해 정규화 (010.001.001.001 → 10.1.1.1)
 function extractIps(line, keepCidr) {
   const result = [];
   for (const m of line.matchAll(IP_RE)) {
-    const [, ip, prefix] = m;
-    if (!isValidIp(ip)) continue;
-    const withCidr = keepCidr && prefix !== undefined && Number(prefix) <= 32;
-    result.push(withCidr ? `${ip}/${prefix}` : ip);
+    const octets = m[2].split('.').map(Number);
+    if (octets.some(n => n > 255)) continue;
+    const ip = octets.join('.');
+    const hasPrefix = keepCidr && m[3] !== undefined;
+    const validPrefix = hasPrefix && Number(m[3]) <= 32;
+    result.push({
+      text: validPrefix ? `${ip}/${Number(m[3])}` : ip,
+      badPrefix: hasPrefix && !validPrefix,
+    });
   }
   return result;
 }
@@ -284,108 +292,190 @@ function ipSortKey(s) {
 
 function fmt(n) { return n.toLocaleString(); }
 
+// 맨 끝의 줄바꿈 하나는 "마지막 줄의 끝"으로 보고 빈 줄로 세지 않음
 function splitLines(text) {
-  return text === '' ? [] : text.split(/\r\n|\r|\n/);
+  if (text === '') return [];
+  const lines = text.split(/\r\n|\r|\n/);
+  if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
+  return lines;
+}
+
+// 입력할 때마다 호출되므로 배열을 만들지 않고 줄바꿈 개수만 셈 (textarea 값은 항상 \n 으로 정규화됨)
+function countLines(text) {
+  if (text === '') return 0;
+  let n = 1;
+  for (let i = text.indexOf('\n'); i !== -1; i = text.indexOf('\n', i + 1)) n++;
+  if (n > 1 && text.endsWith('\n')) n--;
+  return n;
 }
 
 function updateInputCount() {
-  inputCountEl.textContent = `${fmt(splitLines(inputEl.value).length)}줄`;
+  inputCountEl.textContent = `${fmt(countLines(inputEl.value))}줄`;
 }
 
-// "중복 제거 및 정렬"은 모아보기 모드에서만 동작하므로, 꺼져 있을 때는 비활성 + 체크 해제로 표시
+// "중복 제거", "정렬"은 모아보기 모드에서만 동작하므로, 꺼져 있을 때는 비활성 + 체크 해제로 표시
 // 모아보기를 다시 켜면 사용자가 마지막으로 고른 값(처음엔 체크)을 복원
-let dedupePreference = true;
+const collectOnlyOptions = [
+  { el: $('dedupe'), preference: true },
+  { el: $('sortIps'), preference: true },
+];
+const [dedupeOpt, sortOpt] = collectOnlyOptions;
 
 function syncOptions() {
   const collect = collectModeEl.checked;
-  dedupeEl.disabled = !collect;
-  dedupeEl.checked = collect && dedupePreference;
-  dedupeLabel.classList.toggle('disabled', !collect);
+  for (const opt of collectOnlyOptions) {
+    opt.el.disabled = !collect;
+    opt.el.checked = collect && opt.preference;
+    opt.el.closest('label').classList.toggle('disabled', !collect);
+  }
 }
+
+let hasResult = false;   // 현재 결과창이 추출 결과를 보여주는 중인지
+let undoSnapshot = null; // "지우기" 직전 상태 (되돌리기용)
 
 function setOutput(text, ipCount) {
   outputEl.value = text;
+  outputEl.classList.remove('stale');
   outputCountEl.textContent = `${fmt(ipCount)}개`;
   copyBtn.disabled = downloadBtn.disabled = ipCount === 0;
 }
 
-function extract() {
+function setUndo(snapshot) {
+  undoSnapshot = snapshot;
+  clearBtn.textContent = snapshot ? '되돌리기' : '지우기';
+}
+
+function extract({ scroll = true } = {}) {
   const lines = splitLines(inputEl.value);
-  const keepCidr = keepCidrEl.checked;
-  const perLine = lines.map(line => extractIps(line, keepCidr));
-  const matchedLines = perLine.filter(ips => ips.length).length;
-  const multiLines = perLine.filter(ips => ips.length > 1).length;
+  const perLine = lines.map(line => extractIps(line, keepCidrEl.checked));
+  hasResult = lines.length > 0;
 
   let summary;
+  let used; // 실제로 결과에 쓰인 항목
   if (collectModeEl.checked) {
-    let ips = perLine.flat();
+    used = perLine.flat();
+    let ips = used.map(item => item.text);
     const found = ips.length;
-    if (dedupeEl.checked) {
-      ips = Array.from(new Set(ips)).sort((a, b) => ipSortKey(a) - ipSortKey(b));
-    }
+    if (dedupeOpt.el.checked) ips = Array.from(new Set(ips));
+    if (sortOpt.el.checked) ips.sort((a, b) => ipSortKey(a) - ipSortKey(b));
     setOutput(ips.join('\n'), ips.length);
     summary = `총 ${fmt(lines.length)}줄에서 IP ${fmt(found)}개를 찾았습니다.`;
     if (found !== ips.length) summary += ` (중복 ${fmt(found - ips.length)}개 제거)`;
   } else {
     // 각 줄의 첫 번째 IP만 남기고 나머지는 빈 줄 처리 (행 번호는 그대로 유지)
-    const resultLines = perLine.map(ips => ips[0] || '');
-    setOutput(resultLines.join('\n'), matchedLines);
-    summary = `총 ${fmt(lines.length)}줄 중 ${fmt(matchedLines)}개 줄에서 IP를 추출했습니다.`;
+    used = perLine.filter(ips => ips.length).map(ips => ips[0]);
+    const multiLines = perLine.filter(ips => ips.length > 1).length;
+    // IP가 하나도 없으면 줄바꿈만 채우지 않고 결과를 비움
+    setOutput(used.length ? perLine.map(ips => (ips[0] ? ips[0].text : '')).join('\n') : '', used.length);
+    summary = `총 ${fmt(lines.length)}줄 중 ${fmt(used.length)}개 줄에서 IP를 추출했습니다.`;
     if (multiLines) summary += ` IP가 2개 이상인 줄 ${fmt(multiLines)}개는 첫 번째 IP만 사용했습니다. 모두 필요하면 "IP만 모아보기"를 켜세요.`;
   }
+  const badPrefixes = used.filter(item => item.badPrefix).length;
+  if (badPrefixes) summary += ` 범위를 벗어난 CIDR 표기(/33 이상) ${fmt(badPrefixes)}개는 무시하고 IP만 남겼습니다.`;
+  if (!used.length) summary = `총 ${fmt(lines.length)}줄에서 IP를 찾지 못했습니다.`;
   if (!lines.length) summary = '입력된 데이터가 없습니다.';
   statusEl.textContent = summary;
 
   // 모바일(세로 배치)에서는 결과 영역이 화면 아래에 있으므로 자동으로 스크롤
-  if (window.matchMedia('(max-width: 720px)').matches) {
+  if (scroll && window.matchMedia('(max-width: 720px)').matches) {
     outputEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
-function flash(btn, text) {
+function flash(btn, text, className = 'copied') {
   const original = btn.dataset.label || btn.textContent;
   btn.dataset.label = original;
   btn.textContent = text;
-  btn.classList.add('copied');
+  btn.classList.remove('copied', 'failed');
+  btn.classList.add(className);
   clearTimeout(btn._timer);
   btn._timer = setTimeout(() => {
     btn.textContent = original;
-    btn.classList.remove('copied');
+    btn.classList.remove(className);
   }, 1200);
 }
 
-extractBtn.addEventListener('click', extract);
-collectModeEl.addEventListener('change', syncOptions);
-dedupeEl.addEventListener('change', () => { dedupePreference = dedupeEl.checked; });
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    // 권한 거부·비보안 컨텍스트 등: 아래 구형 방식으로 재시도
+  }
+  try {
+    outputEl.removeAttribute('readonly');
+    outputEl.select();
+    return document.execCommand('copy');
+  } catch (err) {
+    return false;
+  } finally {
+    outputEl.setAttribute('readonly', '');
+    window.getSelection()?.removeAllRanges();
+  }
+}
 
-inputEl.addEventListener('input', updateInputCount);
-inputEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+// 옵션을 바꾸면 이미 표시된 결과도 새 설정으로 다시 계산 (결과와 설정이 어긋나지 않도록)
+function onOptionChange() {
+  if (hasResult) extract({ scroll: false });
+}
+
+extractBtn.addEventListener('click', () => extract());
+collectModeEl.addEventListener('change', () => { syncOptions(); onOptionChange(); });
+keepCidrEl.addEventListener('change', onOptionChange);
+for (const opt of collectOnlyOptions) {
+  opt.el.addEventListener('change', () => { opt.preference = opt.el.checked; onOptionChange(); });
+}
+
+inputEl.addEventListener('input', () => {
+  updateInputCount();
+  if (undoSnapshot) setUndo(null);
+  // 추출 후 입력이 바뀌면 결과가 더 이상 최신이 아님을 표시
+  if (hasResult && !outputEl.classList.contains('stale')) {
+    outputEl.classList.add('stale');
+    statusEl.textContent = '입력이 변경되었습니다. 아래 결과는 변경 전 내용이니 다시 추출하세요.';
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.isComposing) {
     e.preventDefault();
     extract();
   }
 });
 
 clearBtn.addEventListener('click', () => {
+  if (undoSnapshot) {
+    const { text, hadResult } = undoSnapshot;
+    setUndo(null);
+    inputEl.value = text;
+    updateInputCount();
+    if (hadResult) extract({ scroll: false });
+    else statusEl.textContent = '';
+    inputEl.focus();
+    return;
+  }
+  const snapshot = { text: inputEl.value, hadResult: hasResult };
   inputEl.value = '';
+  hasResult = false;
   setOutput('', 0);
-  statusEl.textContent = '';
   updateInputCount();
+  if (snapshot.text) {
+    setUndo(snapshot);
+    statusEl.textContent = '입력을 지웠습니다. "되돌리기"를 누르면 복구됩니다.';
+  } else {
+    statusEl.textContent = '';
+  }
   inputEl.focus();
 });
 
 copyBtn.addEventListener('click', async () => {
   if (!outputEl.value) return;
-  try {
-    await navigator.clipboard.writeText(outputEl.value);
-  } catch (err) {
-    outputEl.removeAttribute('readonly');
-    outputEl.select();
-    document.execCommand('copy');
-    outputEl.setAttribute('readonly', '');
-    window.getSelection()?.removeAllRanges();
+  if (await copyText(outputEl.value)) {
+    flash(copyBtn, '복사됨!');
+  } else {
+    flash(copyBtn, '복사 실패', 'failed');
+    statusEl.textContent = '클립보드에 복사하지 못했습니다. 결과를 직접 선택해 복사하거나 ".txt 저장"을 이용하세요.';
   }
-  flash(copyBtn, '복사됨!');
 });
 
 downloadBtn.addEventListener('click', () => {
