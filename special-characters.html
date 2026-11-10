@@ -3,18 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Windows 한국어 입력기에서 한글 자음 + 한자 키로 입력하는 특수문자 전체 목록. 클릭하면 복사됩니다.">
 <title>한글 자음 + 한자 특수문자표</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     color-scheme: light dark;
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --text: #1c1c1e;
+    --text-sub: #555555;
+    --text-muted: #6b6b6b;
+    --heading: #444444;
+    --border: #d9dbe0;
+    --grid-line: #e3e5e9;
+    --accent: #2f5fd0;
+    --accent-text: #ffffff;
+    --hover: #eaf0ff;
+    --toast-bg: #1c1c1e;
+    --toast-text: #ffffff;
+    --error-bg: #b3261e;
+    --error-text: #ffffff;
+    --copied-bg: #1a7f37;
+    --copied-text: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1f22;
+      --surface: #2a2b2e;
+      --text: #e6e6e6;
+      --text-sub: #aaaaaa;
+      --text-muted: #a0a0a0;
+      --heading: #bbbbbb;
+      --border: #3a3b3e;
+      --grid-line: #3a3b3e;
+      --accent: #8ab0ff;
+      --accent-text: #1c1c1e;
+      --hover: #33405e;
+      --toast-bg: #e6e6e6;
+      --toast-text: #1c1c1e;
+      --error-bg: #ffb4ab;
+      --error-text: #1c1c1e;
+    }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
-    font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+    font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans CJK KR", sans-serif;
     margin: 0;
     padding: 24px;
-    background: #f4f5f7;
-    color: #1c1c1e;
+    background: var(--bg);
+    color: var(--text);
   }
   h1 {
     font-size: 20px;
@@ -22,19 +61,54 @@
   }
   .desc {
     font-size: 13px;
-    color: #555;
-    margin: 0 0 16px;
+    color: var(--text-sub);
+    margin: 0 0 12px;
   }
-  .toolbar {
+  kbd {
+    padding: 1px 5px;
+    font: inherit;
+    font-weight: 600;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .sticky {
     position: sticky;
     top: 0;
     z-index: 5;
+    padding: 10px 0;
+    margin-bottom: 8px;
+    background: var(--bg);
+  }
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .search input {
+    flex: 1;
+    min-width: 0;
+    max-width: 360px;
+    padding: 7px 10px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .search input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+  #result {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .toolbar {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    padding: 10px 0;
-    margin-bottom: 8px;
-    background: #f4f5f7;
   }
   .toolbar a {
     padding: 6px 10px;
@@ -42,40 +116,58 @@
     font-weight: 600;
     text-align: center;
     text-decoration: none;
-    color: #4a7dfc;
-    background: #ffffff;
-    border: 1px solid #d9dbe0;
+    color: var(--accent);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 6px;
   }
-  .toolbar a:hover { background: #4a7dfc; border-color: #4a7dfc; color: #fff; }
+  .toolbar a .key { margin-right: 5px; color: var(--text-muted); }
+  .toolbar a:hover,
+  .toolbar a[aria-current] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  .toolbar a:hover .key,
+  .toolbar a[aria-current] .key { color: inherit; }
+  .toolbar a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .column {
-    background: #ffffff;
-    border: 1px solid #d9dbe0;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 20px;
-    scroll-margin-top: calc(var(--toolbar-h, 56px) + 8px);
+    scroll-margin-top: calc(var(--sticky-h, 100px) + 8px);
   }
   .column h2 {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 8px;
     font-size: 16px;
     margin: 0 0 10px;
-    color: #444;
+    color: var(--heading);
     font-weight: 600;
   }
+  .column h2 .key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    font-size: 15px;
+    color: var(--accent-text);
+    background: var(--accent);
+    border-radius: 6px;
+  }
+  .column h2 .hint,
   .column h2 .count {
-    margin-left: auto;
     font-size: 12px;
     font-weight: 400;
-    color: #888;
+    color: var(--text-muted);
   }
+  .column h2 .count { margin-left: auto; }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
-    border-top: 1px solid #e3e5e9;
-    border-left: 1px solid #e3e5e9;
+    border-top: 1px solid var(--grid-line);
+    border-left: 1px solid var(--grid-line);
   }
   .cell {
     aspect-ratio: 1 / 1;
@@ -84,81 +176,99 @@
     justify-content: center;
     padding: 0;
     margin: 0;
-    font-family: "Malgun Gothic", "Segoe UI Symbol", "Segoe UI", sans-serif;
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans CJK KR", "Segoe UI Symbol", "Segoe UI", sans-serif;
     font-size: 20px;
     font-weight: 400;
     color: inherit;
     background: transparent;
     border: none;
-    border-right: 1px solid #e3e5e9;
-    border-bottom: 1px solid #e3e5e9;
+    border-right: 1px solid var(--grid-line);
+    border-bottom: 1px solid var(--grid-line);
     border-radius: 0;
     cursor: pointer;
   }
-  .cell:hover { background: #eaf0ff; }
-  .cell:focus-visible { outline: 2px solid #4a7dfc; outline-offset: -2px; }
-  .cell.label { font-size: 11px; color: #888; }
-  .cell.copied { background: #2ecc71; color: #fff; }
+  .cell:hover { background: var(--hover); }
+  .cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .cell.label { font-size: 11px; color: var(--text-muted); }
+  .cell.copied { background: var(--copied-bg); color: var(--copied-text); }
+  #empty {
+    padding: 32px 0;
+    font-size: 14px;
+    text-align: center;
+    color: var(--text-muted);
+  }
   #status {
     position: fixed;
     left: 50%;
     bottom: 24px;
     transform: translateX(-50%);
+    max-width: calc(100vw - 32px);
     padding: 10px 16px;
     font-size: 13px;
-    color: #fff;
-    background: #1c1c1e;
+    color: var(--toast-text);
+    background: var(--toast-bg);
     border-radius: 6px;
     opacity: 0;
     pointer-events: none;
     transition: opacity .15s;
   }
-  #status.show { opacity: .92; }
+  #status.show { opacity: .95; }
+  #status.error { color: var(--error-text); background: var(--error-bg); }
   #tooltip {
     position: fixed;
+    top: 0;
+    left: 0;
     z-index: 10;
-    max-width: 240px;
+    width: max-content;
+    max-width: min(280px, calc(100vw - 12px));
     padding: 5px 8px;
     font-size: 12px;
     line-height: 1.4;
-    color: #fff;
-    background: #1c1c1e;
+    text-align: center;
+    color: var(--toast-text);
+    background: var(--toast-bg);
     border-radius: 4px;
     pointer-events: none;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
-  #tooltip[hidden] { display: none; }
+  #tooltip .code { opacity: .75; white-space: nowrap; }
 
   @media (max-width: 600px) {
     body { padding: 16px; }
-    .toolbar { flex-wrap: nowrap; overflow-x: auto; }
+    .search input { max-width: none; }
+    .toolbar {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-right: 28px;
+      scrollbar-width: none;
+      /* 오른쪽 끝을 흐리게 해 가로로 더 넘길 수 있음을 표시 */
+      -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+      mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    }
+    .toolbar::-webkit-scrollbar { display: none; }
     .toolbar a { flex: none; white-space: nowrap; }
+    .column h2 .hint { display: none; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); }
     .cell { font-size: 18px; }
-  }
-
-  @media (prefers-color-scheme: dark) {
-    body { background: #1e1f22; color: #e6e6e6; }
-    .desc { color: #aaa; }
-    .toolbar { background: #1e1f22; }
-    .toolbar a { background: #2a2b2e; border-color: #3a3b3e; }
-    .column { background: #2a2b2e; border-color: #3a3b3e; }
-    .column h2 { color: #bbb; }
-    .grid, .cell { border-color: #3a3b3e; }
-    .cell:hover { background: #33405e; }
-    #status, #tooltip { background: #e6e6e6; color: #1c1c1e; }
   }
 </style>
 </head>
 <body>
 
 <h1>한글 자음 + 한자 특수문자표</h1>
-<p class="desc">Windows 한국어 입력기에서 자음을 입력하고 <b>한자</b> 키를 누르면 나오는 특수문자 전체 목록입니다. 칸을 클릭하면 복사됩니다.</p>
+<p class="desc">Windows 한국어 입력기에서 자음을 입력하고 <kbd>한자</kbd> 키를 누르면 나오는 특수문자 전체 목록입니다. 칸을 클릭하면 복사되고, 키보드에서는 방향키로 칸을 옮겨 다닐 수 있습니다.</p>
 
-<nav class="toolbar" id="toolbar" aria-label="자음 바로가기"></nav>
+<div class="sticky" id="sticky">
+  <div class="search" role="search">
+    <input type="search" id="search" placeholder="명칭 · 문자 · 코드(U+2126) 검색" aria-label="특수문자 검색" autocomplete="off" spellcheck="false">
+    <span id="result" role="status" aria-live="polite"></span>
+  </div>
+  <nav class="toolbar" id="toolbar" aria-label="자음 바로가기"></nav>
+</div>
 <div id="groups"></div>
+<p id="empty" hidden>검색 결과가 없습니다.</p>
 <div id="status" role="status" aria-live="polite"></div>
-<div id="tooltip" role="tooltip" hidden></div>
+<div id="tooltip" aria-hidden="true" hidden></div>
 
 <script>
 // 코드 포인트 구간 [시작, 끝]을 문자 배열로 펼침
@@ -173,9 +283,10 @@ function range(...pairs) {
 // 공백으로 구분된 문자 목록을 배열로 변환
 const list = str => str.trim().split(/\s+/);
 
-const SOFT_HYPHEN = '­';
+const SOFT_HYPHEN = '\u00AD';
 
 // Windows IME(KS X 1001 기반) 자음별 특수문자 순서
+// 단위의 옹스트롬(U+212B)·옴(U+2126)은 정규화(NFC)되면 Å(U+00C5)·Ω(U+03A9)로 바뀌므로 이스케이프로 적음
 const GROUPS = [
   { key: 'ㄱ', name: '문장 부호', chars: [
     ...list('！ ＇ ， ． ／ ： ； ？ ＾ ＿ ｀ ｜ ￣ 、 。 · ‥ … ¨ 〃'),
@@ -188,9 +299,9 @@ const GROUPS = [
     '∈ ∋ ⊆ ⊇ ⊂ ⊃ ∪ ∩ ∧ ∨ ￢ ⇒ ⇔ ∀ ∃ ∮ ∑ ∏'
   )},
   { key: 'ㄹ', name: '단위', chars: list(
-    '＄ ％ ￦ Ｆ ′ ″ ℃ Å ￠ ￡ ￥ ¤ ℉ ‰ € ' +
+    '＄ ％ ￦ Ｆ ′ ″ ℃ \u212B ￠ ￡ ￥ ¤ ℉ ‰ € ' +
     '㎕ ㎖ ㎗ ℓ ㎘ ㏄ ㎣ ㎤ ㎥ ㎦ ㎙ ㎚ ㎛ ㎜ ㎝ ㎞ ㎟ ㎠ ㎡ ㎢ ㏊ ㎍ ㎎ ㎏ ㏏ ㎈ ㎉ ㏈ ㎧ ㎨ ' +
-    '㎰ ㎱ ㎲ ㎳ ㎴ ㎵ ㎶ ㎷ ㎸ ㎹ ㎀ ㎁ ㎂ ㎃ ㎄ ㎺ ㎻ ㎼ ㎽ ㎾ ㎿ ㎐ ㎑ ㎒ ㎓ ㎔ Ω ㏀ ㏁ ㎊ ㎋ ㎌ ' +
+    '㎰ ㎱ ㎲ ㎳ ㎴ ㎵ ㎶ ㎷ ㎸ ㎹ ㎀ ㎁ ㎂ ㎃ ㎄ ㎺ ㎻ ㎼ ㎽ ㎾ ㎿ ㎐ ㎑ ㎒ ㎓ ㎔ \u2126 ㏀ ㏁ ㎊ ㎋ ㎌ ' +
     '㏖ ㏅ ㎭ ㎮ ㎯ ㏛ ㎩ ㎪ ㎫ ㎬ ㏝ ㏐ ㏓ ㏃ ㏉ ㏜ ㏆'
   )},
   { key: 'ㅁ', name: '도형 · 기타 기호', chars: list(
@@ -226,7 +337,7 @@ const GROUPS = [
 // 화면에 보이지 않는 문자는 이름으로 표시
 const LABELS = { [SOFT_HYPHEN]: 'SHY' };
 
-// 문자별 명칭: 한 줄에 "문자 한글명|영문명" (한쪽이 없으면 비워 둠)
+// 문자별 명칭(규칙적인 문자는 아래에서 계산): 한 줄에 "문자 한글명|영문명" (한쪽이 없으면 비워 둠)
 function parseNames(text) {
   const out = {};
   for (const line of text.split('\n')) {
@@ -248,34 +359,34 @@ const NAMES = parseNames(`
 ： 쌍점|Colon
 ； 쌍반점|Semicolon
 ？ 물음표|Question Mark
-＾ |Circumflex Accent
+＾ 곡절 부호|Circumflex Accent
 ＿ 밑줄|Low Line
-｀ |Grave Accent
+｀ 억음 부호|Grave Accent
 ｜ 세로 막대|Vertical Line
-￣ |Macron
+￣ 윗줄|Macron
 、 모점|Ideographic Comma
 。 고리점|Ideographic Full Stop
 · 가운뎃점|Middle Dot
-‥ |Two Dot Leader
+‥ 두 점 줄임표|Two Dot Leader
 … 줄임표|Horizontal Ellipsis
-¨ |Diaeresis
-〃 |Ditto Mark
+¨ 분음 부호|Diaeresis
+〃 같음표|Ditto Mark
 ― 줄표|Horizontal Bar
 ∥ 평행|Parallel To
 ＼ 역슬래시|Reverse Solidus
 ∼ 물결표|Tilde Operator
-´ |Acute Accent
+´ 양음 부호|Acute Accent
 ～ 물결표|Tilde
-ˇ |Caron
-˘ |Breve
-˝ |Double Acute Accent
-˚ |Ring Above
-˙ |Dot Above
-¸ |Cedilla
-˛ |Ogonek
-¡ |Inverted Exclamation Mark
-¿ |Inverted Question Mark
-ː |Triangular Colon
+ˇ 캐론|Caron
+˘ 브레브|Breve
+˝ 겹양음 부호|Double Acute Accent
+˚ 윗고리|Ring Above
+˙ 윗점|Dot Above
+¸ 세디유|Cedilla
+˛ 오고넥|Ogonek
+¡ 역느낌표|Inverted Exclamation Mark
+¿ 역물음표|Inverted Question Mark
+ː 장음 부호|Triangular Colon
 ＂ 큰따옴표|Quotation Mark
 （ 여는 소괄호|Left Parenthesis
 ） 닫는 소괄호|Right Parenthesis
@@ -287,8 +398,8 @@ const NAMES = parseNames(`
 ’ 닫는 작은따옴표|Right Single Quotation Mark
 “ 여는 큰따옴표|Left Double Quotation Mark
 ” 닫는 큰따옴표|Right Double Quotation Mark
-〔 |Left Tortoise Shell Bracket
-〕 |Right Tortoise Shell Bracket
+〔 여는 거북등괄호|Left Tortoise Shell Bracket
+〕 닫는 거북등괄호|Right Tortoise Shell Bracket
 〈 여는 홑화살괄호|Left Angle Bracket
 〉 닫는 홑화살괄호|Right Angle Bracket
 《 여는 겹화살괄호|Left Double Angle Bracket
@@ -297,8 +408,8 @@ const NAMES = parseNames(`
 」 닫는 홑낫표|Right Corner Bracket
 『 여는 겹낫표|Left White Corner Bracket
 』 닫는 겹낫표|Right White Corner Bracket
-【 |Left Black Lenticular Bracket
-】 |Right Black Lenticular Bracket
+【 여는 검은 렌즈괄호|Left Black Lenticular Bracket
+】 닫는 검은 렌즈괄호|Right Black Lenticular Bracket
 ＋ 더하기|Plus Sign
 － 빼기|Hyphen-Minus
 ＜ 보다 작음|Less-Than Sign
@@ -340,8 +451,8 @@ const NAMES = parseNames(`
 ∧ 논리곱|Logical And
 ∨ 논리합|Logical Or
 ￢ 부정|Not Sign
-⇒ |Rightwards Double Arrow
-⇔ |Left Right Double Arrow
+⇒ 오른쪽 이중 화살표|Rightwards Double Arrow
+⇔ 좌우 이중 화살표|Left Right Double Arrow
 ∀ 모든|For All
 ∃ 존재|There Exists
 ∮ 선적분|Contour Integral
@@ -350,10 +461,10 @@ const NAMES = parseNames(`
 ＄ 달러|Dollar Sign
 ％ 퍼센트|Percent Sign
 ￦ 원|Won Sign
-′ |Prime
-″ |Double Prime
+′ 프라임|Prime
+″ 더블 프라임|Double Prime
 ℃ 섭씨|Degree Celsius
-Å 옹스트롬|Angstrom Sign
+\u212B 옹스트롬|Angstrom Sign
 ￠ 센트|Cent Sign
 ￡ 파운드|Pound Sign
 ￥ 엔|Yen Sign
@@ -417,7 +528,7 @@ const NAMES = parseNames(`
 ㎒ 메가헤르츠|Megahertz
 ㎓ 기가헤르츠|Gigahertz
 ㎔ 테라헤르츠|Terahertz
-Ω 옴|Ohm
+\u2126 옴|Ohm Sign
 ㏀ 킬로옴|Kiloohm
 ㏁ 메가옴|Megaohm
 ㎊ 피코패럿|Picofarad
@@ -440,7 +551,7 @@ const NAMES = parseNames(`
 ㏉ 그레이|Gray
 ㏜ 시버트|Sievert
 ㏆ 쿨롬 매 킬로그램|Coulombs per Kilogram
-＃ |Number Sign
+＃ 샵|Number Sign
 ＆ 앰퍼샌드|Ampersand
 ＊ 별표|Asterisk
 ＠ 골뱅이|Commercial At
@@ -464,7 +575,7 @@ const NAMES = parseNames(`
 ↑ 위쪽 화살표|Upwards Arrow
 ↓ 아래쪽 화살표|Downwards Arrow
 ↔ 좌우 화살표|Left Right Arrow
-〓 |Geta Mark
+〓 게타 기호|Geta Mark
 ◁ 빈 왼쪽 삼각형|White Left-Pointing Triangle
 ◀ 검은 왼쪽 삼각형|Black Left-Pointing Triangle
 ▷ 빈 오른쪽 삼각형|White Right-Pointing Triangle
@@ -475,18 +586,18 @@ const NAMES = parseNames(`
 ♥ 검은 하트|Black Heart Suit
 ♧ 빈 클로버|White Club Suit
 ♣ 검은 클로버|Black Club Suit
-⊙ |Circled Dot Operator
-◈ |White Diamond Containing Black Small Diamond
-▣ |White Square Containing Black Small Square
-◐ |Circle with Left Half Black
-◑ |Circle with Right Half Black
-▒ |Medium Shade
-▤ |Square with Horizontal Fill
-▥ |Square with Vertical Fill
-▨ |Square with Upper Right to Lower Left Fill
-▧ |Square with Upper Left to Lower Right Fill
-▦ |Square with Orthogonal Crosshatch Fill
-▩ |Square with Diagonal Crosshatch Fill
+⊙ 점 있는 원|Circled Dot Operator
+◈ 검은 마름모가 든 마름모|White Diamond Containing Black Small Diamond
+▣ 검은 사각형이 든 사각형|White Square Containing Black Small Square
+◐ 왼쪽 반 검은 원|Circle with Left Half Black
+◑ 오른쪽 반 검은 원|Circle with Right Half Black
+▒ 중간 음영|Medium Shade
+▤ 가로줄 사각형|Square with Horizontal Fill
+▥ 세로줄 사각형|Square with Vertical Fill
+▨ 오른쪽 위 빗금 사각형|Square with Upper Right to Lower Left Fill
+▧ 왼쪽 위 빗금 사각형|Square with Upper Left to Lower Right Fill
+▦ 격자 사각형|Square with Orthogonal Crosshatch Fill
+▩ 대각 격자 사각형|Square with Diagonal Crosshatch Fill
 ♨ 온천|Hot Springs
 ☏ 빈 전화기|White Telephone
 ☎ 검은 전화기|Black Telephone
@@ -503,11 +614,11 @@ const NAMES = parseNames(`
 ♭ 플랫|Music Flat Sign
 ♩ 4분음표|Quarter Note
 ♪ 8분음표|Eighth Note
-♬ |Beamed Sixteenth Notes
-㉿ |Korean Standard Symbol
-㈜ 주식회사|
+♬ 16분음표 묶음|Beamed Sixteenth Notes
+㉿ 한국 산업 표준 기호|Korean Standard Symbol
+㈜ 주식회사|Parenthesized Hangul Cieuc U
 № 번호|Numero Sign
-㏇ |Square Co
+㏇ 주식회사|Square Co
 ™ 상표|Trade Mark Sign
 ㏂ 오전|Square A.M.
 ㏘ 오후|Square P.M.
@@ -531,99 +642,334 @@ const NAMES = parseNames(`
 ₂ 아래 첨자 2|Subscript Two
 ₃ 아래 첨자 3|Subscript Three
 ₄ 아래 첨자 4|Subscript Four
-Æ |Latin Capital Letter AE
-Ð |Latin Capital Letter Eth
-ª |Feminine Ordinal Indicator
-Ħ |Latin Capital Letter H with Stroke
-Ĳ |Latin Capital Ligature IJ
-Ŀ |Latin Capital Letter L with Middle Dot
-Ł |Latin Capital Letter L with Stroke
-Ø |Latin Capital Letter O with Stroke
-Œ |Latin Capital Ligature OE
-º |Masculine Ordinal Indicator
-Þ |Latin Capital Letter Thorn
-Ŧ |Latin Capital Letter T with Stroke
-Ŋ |Latin Capital Letter Eng
-æ |Latin Small Letter AE
-đ |Latin Small Letter D with Stroke
-ð |Latin Small Letter Eth
-ħ |Latin Small Letter H with Stroke
-ı |Latin Small Letter Dotless I
-ĳ |Latin Small Ligature IJ
-ĸ |Latin Small Letter Kra
-ŀ |Latin Small Letter L with Middle Dot
-ł |Latin Small Letter L with Stroke
-ø |Latin Small Letter O with Stroke
-œ |Latin Small Ligature OE
-ß |Latin Small Letter Sharp S
-þ |Latin Small Letter Thorn
-ŧ |Latin Small Letter T with Stroke
-ŋ |Latin Small Letter Eng
-ŉ |Latin Small Letter N Preceded by Apostrophe
+Æ 라틴 대문자 AE|Latin Capital Letter AE
+Ð 라틴 대문자 에드|Latin Capital Letter Eth
+ª 여성형 서수 표시|Feminine Ordinal Indicator
+Ħ 라틴 대문자 줄 그은 H|Latin Capital Letter H with Stroke
+Ĳ 라틴 대문자 합자 IJ|Latin Capital Ligature IJ
+Ŀ 라틴 대문자 가운뎃점 L|Latin Capital Letter L with Middle Dot
+Ł 라틴 대문자 줄 그은 L|Latin Capital Letter L with Stroke
+Ø 라틴 대문자 줄 그은 O|Latin Capital Letter O with Stroke
+Œ 라틴 대문자 합자 OE|Latin Capital Ligature OE
+º 남성형 서수 표시|Masculine Ordinal Indicator
+Þ 라틴 대문자 손|Latin Capital Letter Thorn
+Ŧ 라틴 대문자 줄 그은 T|Latin Capital Letter T with Stroke
+Ŋ 라틴 대문자 엥|Latin Capital Letter Eng
+æ 라틴 소문자 ae|Latin Small Letter AE
+đ 라틴 소문자 줄 그은 d|Latin Small Letter D with Stroke
+ð 라틴 소문자 에드|Latin Small Letter Eth
+ħ 라틴 소문자 줄 그은 h|Latin Small Letter H with Stroke
+ı 라틴 소문자 점 없는 i|Latin Small Letter Dotless I
+ĳ 라틴 소문자 합자 ij|Latin Small Ligature IJ
+ĸ 라틴 소문자 크라|Latin Small Letter Kra
+ŀ 라틴 소문자 가운뎃점 l|Latin Small Letter L with Middle Dot
+ł 라틴 소문자 줄 그은 l|Latin Small Letter L with Stroke
+ø 라틴 소문자 줄 그은 o|Latin Small Letter O with Stroke
+œ 라틴 소문자 합자 oe|Latin Small Ligature OE
+ß 라틴 소문자 에스체트|Latin Small Letter Sharp S
+þ 라틴 소문자 손|Latin Small Letter Thorn
+ŧ 라틴 소문자 줄 그은 t|Latin Small Letter T with Stroke
+ŋ 라틴 소문자 엥|Latin Small Letter Eng
+ŉ 라틴 소문자 아포스트로피 n|Latin Small Letter N Preceded by Apostrophe
+─ 가는 괘선|Box Drawings Light Horizontal
+│ 가는 괘선|Box Drawings Light Vertical
+┌ 가는 괘선|Box Drawings Light Down and Right
+┐ 가는 괘선|Box Drawings Light Down and Left
+┘ 가는 괘선|Box Drawings Light Up and Left
+└ 가는 괘선|Box Drawings Light Up and Right
+├ 가는 괘선|Box Drawings Light Vertical and Right
+┬ 가는 괘선|Box Drawings Light Down and Horizontal
+┤ 가는 괘선|Box Drawings Light Vertical and Left
+┴ 가는 괘선|Box Drawings Light Up and Horizontal
+┼ 가는 괘선|Box Drawings Light Vertical and Horizontal
+━ 굵은 괘선|Box Drawings Heavy Horizontal
+┃ 굵은 괘선|Box Drawings Heavy Vertical
+┏ 굵은 괘선|Box Drawings Heavy Down and Right
+┓ 굵은 괘선|Box Drawings Heavy Down and Left
+┛ 굵은 괘선|Box Drawings Heavy Up and Left
+┗ 굵은 괘선|Box Drawings Heavy Up and Right
+┣ 굵은 괘선|Box Drawings Heavy Vertical and Right
+┳ 굵은 괘선|Box Drawings Heavy Down and Horizontal
+┫ 굵은 괘선|Box Drawings Heavy Vertical and Left
+┻ 굵은 괘선|Box Drawings Heavy Up and Horizontal
+╋ 굵은 괘선|Box Drawings Heavy Vertical and Horizontal
+┠ 혼합 괘선|Box Drawings Vertical Heavy and Right Light
+┯ 혼합 괘선|Box Drawings Down Light and Horizontal Heavy
+┨ 혼합 괘선|Box Drawings Vertical Heavy and Left Light
+┷ 혼합 괘선|Box Drawings Up Light and Horizontal Heavy
+┿ 혼합 괘선|Box Drawings Vertical Light and Horizontal Heavy
+┝ 혼합 괘선|Box Drawings Vertical Light and Right Heavy
+┰ 혼합 괘선|Box Drawings Down Heavy and Horizontal Light
+┥ 혼합 괘선|Box Drawings Vertical Light and Left Heavy
+┸ 혼합 괘선|Box Drawings Up Heavy and Horizontal Light
+╂ 혼합 괘선|Box Drawings Vertical Heavy and Horizontal Light
+┒ 혼합 괘선|Box Drawings Down Heavy and Left Light
+┑ 혼합 괘선|Box Drawings Down Light and Left Heavy
+┚ 혼합 괘선|Box Drawings Up Heavy and Left Light
+┙ 혼합 괘선|Box Drawings Up Light and Left Heavy
+┖ 혼합 괘선|Box Drawings Up Heavy and Right Light
+┕ 혼합 괘선|Box Drawings Up Light and Right Heavy
+┎ 혼합 괘선|Box Drawings Down Heavy and Right Light
+┍ 혼합 괘선|Box Drawings Down Light and Right Heavy
+┞ 혼합 괘선|Box Drawings Up Heavy and Right Down Light
+┟ 혼합 괘선|Box Drawings Down Heavy and Right Up Light
+┡ 혼합 괘선|Box Drawings Down Light and Right Up Heavy
+┢ 혼합 괘선|Box Drawings Up Light and Right Down Heavy
+┦ 혼합 괘선|Box Drawings Up Heavy and Left Down Light
+┧ 혼합 괘선|Box Drawings Down Heavy and Left Up Light
+┩ 혼합 괘선|Box Drawings Down Light and Left Up Heavy
+┪ 혼합 괘선|Box Drawings Up Light and Left Down Heavy
+┭ 혼합 괘선|Box Drawings Left Heavy and Right Down Light
+┮ 혼합 괘선|Box Drawings Right Heavy and Left Down Light
+┱ 혼합 괘선|Box Drawings Right Light and Left Down Heavy
+┲ 혼합 괘선|Box Drawings Left Light and Right Down Heavy
+┵ 혼합 괘선|Box Drawings Left Heavy and Right Up Light
+┶ 혼합 괘선|Box Drawings Right Heavy and Left Up Light
+┹ 혼합 괘선|Box Drawings Right Light and Left Up Heavy
+┺ 혼합 괘선|Box Drawings Left Light and Right Up Heavy
+┽ 혼합 괘선|Box Drawings Left Heavy and Right Vertical Light
+┾ 혼합 괘선|Box Drawings Right Heavy and Left Vertical Light
+╀ 혼합 괘선|Box Drawings Up Heavy and Down Horizontal Light
+╁ 혼합 괘선|Box Drawings Down Heavy and Up Horizontal Light
+╃ 혼합 괘선|Box Drawings Left Up Heavy and Right Down Light
+╄ 혼합 괘선|Box Drawings Right Up Heavy and Left Down Light
+╅ 혼합 괘선|Box Drawings Left Down Heavy and Right Up Light
+╆ 혼합 괘선|Box Drawings Right Down Heavy and Left Up Light
+╇ 혼합 괘선|Box Drawings Down Light and Up Horizontal Heavy
+╈ 혼합 괘선|Box Drawings Up Light and Down Horizontal Heavy
+╉ 혼합 괘선|Box Drawings Right Light and Left Vertical Heavy
+╊ 혼합 괘선|Box Drawings Left Light and Right Vertical Heavy
+ㄱ 기역|Hangul Letter Kiyeok
+ㄲ 쌍기역|Hangul Letter Ssangkiyeok
+ㄳ 기역시옷|Hangul Letter Kiyeok-Sios
+ㄴ 니은|Hangul Letter Nieun
+ㄵ 니은지읒|Hangul Letter Nieun-Cieuc
+ㄶ 니은히읗|Hangul Letter Nieun-Hieuh
+ㄷ 디귿|Hangul Letter Tikeut
+ㄸ 쌍디귿|Hangul Letter Ssangtikeut
+ㄹ 리을|Hangul Letter Rieul
+ㄺ 리을기역|Hangul Letter Rieul-Kiyeok
+ㄻ 리을미음|Hangul Letter Rieul-Mieum
+ㄼ 리을비읍|Hangul Letter Rieul-Pieup
+ㄽ 리을시옷|Hangul Letter Rieul-Sios
+ㄾ 리을티읕|Hangul Letter Rieul-Thieuth
+ㄿ 리을피읖|Hangul Letter Rieul-Phieuph
+ㅀ 리을히읗|Hangul Letter Rieul-Hieuh
+ㅁ 미음|Hangul Letter Mieum
+ㅂ 비읍|Hangul Letter Pieup
+ㅃ 쌍비읍|Hangul Letter Ssangpieup
+ㅄ 비읍시옷|Hangul Letter Pieup-Sios
+ㅅ 시옷|Hangul Letter Sios
+ㅆ 쌍시옷|Hangul Letter Ssangsios
+ㅇ 이응|Hangul Letter Ieung
+ㅈ 지읒|Hangul Letter Cieuc
+ㅉ 쌍지읒|Hangul Letter Ssangcieuc
+ㅊ 치읓|Hangul Letter Chieuch
+ㅋ 키읔|Hangul Letter Khieukh
+ㅌ 티읕|Hangul Letter Thieuth
+ㅍ 피읖|Hangul Letter Phieuph
+ㅎ 히읗|Hangul Letter Hieuh
+ㅏ 아|Hangul Letter A
+ㅐ 애|Hangul Letter Ae
+ㅑ 야|Hangul Letter Ya
+ㅒ 얘|Hangul Letter Yae
+ㅓ 어|Hangul Letter Eo
+ㅔ 에|Hangul Letter E
+ㅕ 여|Hangul Letter Yeo
+ㅖ 예|Hangul Letter Ye
+ㅗ 오|Hangul Letter O
+ㅘ 와|Hangul Letter Wa
+ㅙ 왜|Hangul Letter Wae
+ㅚ 외|Hangul Letter Oe
+ㅛ 요|Hangul Letter Yo
+ㅜ 우|Hangul Letter U
+ㅝ 워|Hangul Letter Weo
+ㅞ 웨|Hangul Letter We
+ㅟ 위|Hangul Letter Wi
+ㅠ 유|Hangul Letter Yu
+ㅡ 으|Hangul Letter Eu
+ㅢ 의|Hangul Letter Yi
+ㅣ 이|Hangul Letter I
+ㅥ 쌍니은|Hangul Letter Ssangnieun
+ㅦ 니은디귿|Hangul Letter Nieun-Tikeut
+ㅧ 니은시옷|Hangul Letter Nieun-Sios
+ㅨ 니은반시옷|Hangul Letter Nieun-Pansios
+ㅩ 리을기역시옷|Hangul Letter Rieul-Kiyeok-Sios
+ㅪ 리을디귿|Hangul Letter Rieul-Tikeut
+ㅫ 리을비읍시옷|Hangul Letter Rieul-Pieup-Sios
+ㅬ 리을반시옷|Hangul Letter Rieul-Pansios
+ㅭ 리을여린히읗|Hangul Letter Rieul-Yeorinhieuh
+ㅮ 미음비읍|Hangul Letter Mieum-Pieup
+ㅯ 미음시옷|Hangul Letter Mieum-Sios
+ㅰ 미음반시옷|Hangul Letter Mieum-Pansios
+ㅱ 가벼운미음|Hangul Letter Kapyeounmieum
+ㅲ 비읍기역|Hangul Letter Pieup-Kiyeok
+ㅳ 비읍디귿|Hangul Letter Pieup-Tikeut
+ㅴ 비읍시옷기역|Hangul Letter Pieup-Sios-Kiyeok
+ㅵ 비읍시옷디귿|Hangul Letter Pieup-Sios-Tikeut
+ㅶ 비읍지읒|Hangul Letter Pieup-Cieuc
+ㅷ 비읍티읕|Hangul Letter Pieup-Thieuth
+ㅸ 가벼운비읍|Hangul Letter Kapyeounpieup
+ㅹ 가벼운쌍비읍|Hangul Letter Kapyeounssangpieup
+ㅺ 시옷기역|Hangul Letter Sios-Kiyeok
+ㅻ 시옷니은|Hangul Letter Sios-Nieun
+ㅼ 시옷디귿|Hangul Letter Sios-Tikeut
+ㅽ 시옷비읍|Hangul Letter Sios-Pieup
+ㅾ 시옷지읒|Hangul Letter Sios-Cieuc
+ㅿ 반시옷|Hangul Letter Pansios
+ㆀ 쌍이응|Hangul Letter Ssangieung
+ㆁ 옛이응|Hangul Letter Yesieung
+ㆂ 옛이응시옷|Hangul Letter Yesieung-Sios
+ㆃ 옛이응반시옷|Hangul Letter Yesieung-Pansios
+ㆄ 가벼운피읖|Hangul Letter Kapyeounphieuph
+ㆅ 쌍히읗|Hangul Letter Ssanghieuh
+ㆆ 여린히읗|Hangul Letter Yeorinhieuh
+ㆇ 요야|Hangul Letter Yo-Ya
+ㆈ 요얘|Hangul Letter Yo-Yae
+ㆉ 요이|Hangul Letter Yo-I
+ㆊ 유여|Hangul Letter Yu-Yeo
+ㆋ 유예|Hangul Letter Yu-Ye
+ㆌ 유이|Hangul Letter Yu-I
+ㆍ 아래아|Hangul Letter Araea
+ㆎ 아래애|Hangul Letter Araeae
 `);
 NAMES[SOFT_HYPHEN] = { ko: '소프트 하이픈', en: 'Soft Hyphen' };
 
-// 한글 호환 자모(U+3131~U+3163) 명칭
-list(
-  '기역 쌍기역 기역시옷 니은 니은지읒 니은히읗 디귿 쌍디귿 리을 리을기역 리을미음 리을비읍 리을시옷 리을티읕 리을피읖 리을히읗 ' +
-  '미음 비읍 쌍비읍 비읍시옷 시옷 쌍시옷 이응 지읒 쌍지읒 치읓 키읔 티읕 피읖 히읗 ' +
-  '아 애 야 얘 어 에 여 예 오 와 왜 외 요 우 워 웨 위 유 으 의 이'
-).forEach((ko, i) => { NAMES[String.fromCodePoint(0x3131 + i)] = { ko, en: '' }; });
+// 규칙적으로 이어지는 문자는 명칭을 계산해서 채움
+function setNames(chars, nameAt) {
+  chars.forEach((ch, i) => { NAMES[ch] = nameAt(i); });
+}
 
-// 그리스 문자 명칭 (U+03A2는 비어 있는 코드 포인트라 대문자에서 제외)
-[
+const NUMBER_WORDS = list('Zero One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve Thirteen Fourteen Fifteen');
+const LATIN_UPPER = range([0x41, 0x5A]);
+
+// 그리스 문자 (U+03A2, U+03C2는 표에 없어 건너뜀)
+const GREEK = [
   ['알파', 'Alpha'], ['베타', 'Beta'], ['감마', 'Gamma'], ['델타', 'Delta'], ['엡실론', 'Epsilon'], ['제타', 'Zeta'],
   ['에타', 'Eta'], ['세타', 'Theta'], ['이오타', 'Iota'], ['카파', 'Kappa'], ['람다', 'Lambda'], ['뮤', 'Mu'],
   ['뉴', 'Nu'], ['크시', 'Xi'], ['오미크론', 'Omicron'], ['파이', 'Pi'], ['로', 'Rho'], ['시그마', 'Sigma'],
   ['타우', 'Tau'], ['입실론', 'Upsilon'], ['피', 'Phi'], ['카이', 'Chi'], ['프사이', 'Psi'], ['오메가', 'Omega']
-].forEach(([ko, en], i) => {
-  const offset = i >= 17 ? i + 1 : i;
-  NAMES[String.fromCodePoint(0x0391 + offset)] = { ko: '대문자 ' + ko, en: 'Capital ' + en };
-  NAMES[String.fromCodePoint(0x03B1 + offset)] = { ko: '소문자 ' + ko, en: 'Small ' + en };
+];
+setNames(range([0x0391, 0x03A1], [0x03A3, 0x03A9]), i => ({ ko: '대문자 ' + GREEK[i][0], en: 'Greek Capital Letter ' + GREEK[i][1] }));
+setNames(range([0x03B1, 0x03C1], [0x03C3, 0x03C9]), i => ({ ko: '소문자 ' + GREEK[i][0], en: 'Greek Small Letter ' + GREEK[i][1] }));
+
+// 한글 원 문자 · 괄호 문자: 자음 14자 뒤에 '가'~'하' 14자가 이어짐
+const HANGUL_KO = list('기역 니은 디귿 리을 미음 비읍 시옷 이응 지읒 치읓 키읔 티읕 피읖 히읗 가 나 다 라 마 바 사 아 자 차 카 타 파 하');
+const HANGUL_EN = list('Kiyeok Nieun Tikeut Rieul Mieum Pieup Sios Ieung Cieuc Chieuch Khieukh Thieuth Phieuph Hieuh');
+const hangulEn = i => HANGUL_EN[i % 14] + (i >= 14 ? ' A' : '');
+setNames(range([0x3260, 0x327B]), i => ({ ko: '원 문자 ' + HANGUL_KO[i], en: 'Circled Hangul ' + hangulEn(i) }));
+setNames(range([0x3200, 0x321B]), i => ({ ko: '괄호 문자 ' + HANGUL_KO[i], en: 'Parenthesized Hangul ' + hangulEn(i) }));
+
+// 영문 · 숫자 원 문자 · 괄호 문자 (숫자는 1~15)
+const numberEn = n => (n < 10 ? 'Digit ' : 'Number ') + NUMBER_WORDS[n];
+setNames(range([0x24D0, 0x24E9]), i => ({ ko: '원 문자 ' + LATIN_UPPER[i].toLowerCase(), en: 'Circled Latin Small Letter ' + LATIN_UPPER[i] }));
+setNames(range([0x2460, 0x246E]), i => ({ ko: '원 문자 ' + (i + 1), en: 'Circled ' + numberEn(i + 1) }));
+setNames(range([0x249C, 0x24B5]), i => ({ ko: '괄호 문자 ' + LATIN_UPPER[i].toLowerCase(), en: 'Parenthesized Latin Small Letter ' + LATIN_UPPER[i] }));
+setNames(range([0x2474, 0x2482]), i => ({ ko: '괄호 문자 ' + (i + 1), en: 'Parenthesized ' + numberEn(i + 1) }));
+
+// 전각 숫자 · 로마 숫자
+setNames(range([0xFF10, 0xFF19]), i => ({ ko: '전각 숫자 ' + i, en: 'Fullwidth Digit ' + NUMBER_WORDS[i] }));
+setNames(range([0x2170, 0x2179]), i => ({ ko: '소문자 로마 숫자 ' + (i + 1), en: 'Small Roman Numeral ' + NUMBER_WORDS[i + 1] }));
+setNames(range([0x2160, 0x2169]), i => ({ ko: '대문자 로마 숫자 ' + (i + 1), en: 'Roman Numeral ' + NUMBER_WORDS[i + 1] }));
+
+// 전각 영문
+setNames(range([0xFF21, 0xFF3A]), i => ({ ko: '전각 대문자 ' + LATIN_UPPER[i], en: 'Fullwidth Latin Capital Letter ' + LATIN_UPPER[i] }));
+setNames(range([0xFF41, 0xFF5A]), i => ({ ko: '전각 소문자 ' + LATIN_UPPER[i].toLowerCase(), en: 'Fullwidth Latin Small Letter ' + LATIN_UPPER[i] }));
+
+// 가나: "유니코드 명칭=한글 표기" 목록. '*'는 작은 글자. 히라가나는 앞 83자, 가타카나는 86자 전부 사용
+const KANA = list(
+  '*A=아 A=아 *I=이 I=이 *U=우 U=우 *E=에 E=에 *O=오 O=오 ' +
+  'Ka=카 Ga=가 Ki=키 Gi=기 Ku=쿠 Gu=구 Ke=케 Ge=게 Ko=코 Go=고 ' +
+  'Sa=사 Za=자 Si=시 Zi=지 Su=스 Zu=즈 Se=세 Ze=제 So=소 Zo=조 ' +
+  'Ta=타 Da=다 Ti=치 Di=지 *Tu=쓰 Tu=쓰 Du=즈 Te=테 De=데 To=토 Do=도 ' +
+  'Na=나 Ni=니 Nu=누 Ne=네 No=노 ' +
+  'Ha=하 Ba=바 Pa=파 Hi=히 Bi=비 Pi=피 Hu=후 Bu=부 Pu=푸 He=헤 Be=베 Pe=페 Ho=호 Bo=보 Po=포 ' +
+  'Ma=마 Mi=미 Mu=무 Me=메 Mo=모 *Ya=야 Ya=야 *Yu=유 Yu=유 *Yo=요 Yo=요 ' +
+  'Ra=라 Ri=리 Ru=루 Re=레 Ro=로 *Wa=와 Wa=와 Wi=위 We=웨 Wo=오 N=응 ' +
+  'Vu=부 *Ka=카 *Ke=케'
+).map(token => {
+  const small = token.startsWith('*');
+  const [en, ko] = token.replace('*', '').split('=');
+  return { ko: (small ? '작은 ' : '') + ko, en: (small ? 'Small ' : '') + en };
 });
+setNames(range([0x3041, 0x3093]), i => ({ ko: '히라가나 ' + KANA[i].ko, en: 'Hiragana Letter ' + KANA[i].en }));
+setNames(range([0x30A1, 0x30F6]), i => ({ ko: '가타카나 ' + KANA[i].ko, en: 'Katakana Letter ' + KANA[i].en }));
+
+// 키릴 문자: "유니코드 명칭=한글 명칭" 목록 ('_'는 공백). 표와 같은 순서(Ё가 Е 뒤)
+const CYRILLIC = list(
+  'A=아 Be=베 Ve=베 Ghe=게 De=데 Ie=예 Io=요 Zhe=제 Ze=제 I=이 Short_I=짧은_이 Ka=카 El=엘 Em=엠 En=엔 O=오 Pe=페 ' +
+  'Er=에르 Es=에스 Te=테 U=우 Ef=에프 Ha=하 Tse=체 Che=체 Sha=샤 Shcha=시차 Hard_Sign=경음_부호 Yeru=예리 ' +
+  'Soft_Sign=연음_부호 E=에 Yu=유 Ya=야'
+).map(token => {
+  const [en, ko] = token.replace(/_/g, ' ').split('=');
+  return { ko, en };
+});
+setNames(range([0x0410, 0x0415], [0x0401, 0x0401], [0x0416, 0x042F]),
+  i => ({ ko: '키릴 대문자 ' + CYRILLIC[i].ko, en: 'Cyrillic Capital Letter ' + CYRILLIC[i].en }));
+setNames(range([0x0430, 0x0435], [0x0451, 0x0451], [0x0436, 0x044F]),
+  i => ({ ko: '키릴 소문자 ' + CYRILLIC[i].ko, en: 'Cyrillic Small Letter ' + CYRILLIC[i].en }));
 
 // 한글·영문 명칭 조합: 둘 다 있으면 "한글 (영문)", 하나만 있으면 그것만, 둘 다 없으면 빈 문자열
-function tooltipOf(ch) {
+function nameOf(ch) {
   const { ko = '', en = '' } = NAMES[ch] || {};
   if (ko && en) return `${ko} (${en})`;
   return ko || en;
 }
 
+const codeOf = ch => 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+
+const stickyEl = document.getElementById('sticky');
+const searchEl = document.getElementById('search');
+const resultEl = document.getElementById('result');
 const toolbarEl = document.getElementById('toolbar');
 const groupsEl = document.getElementById('groups');
+const emptyEl = document.getElementById('empty');
 const statusEl = document.getElementById('status');
 const tooltipEl = document.getElementById('tooltip');
 
-const codeOf = ch => 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
-
-for (const group of GROUPS) {
-  const id = 'g-' + group.key;
+// 그룹별 화면 요소 모음: { link, section, countEl, cells }
+const views = GROUPS.map(group => {
+  const id = 'g-' + group.key.codePointAt(0).toString(16);
+  const hint = group.key + ' + 한자';
 
   const link = document.createElement('a');
   link.href = '#' + id;
-  link.textContent = group.name;
-  link.title = group.key + ' + 한자';
+  link.title = hint;
+  link.innerHTML = '<span class="key"></span>';
+  link.firstChild.textContent = group.key;
+  link.append(group.name);
   toolbarEl.appendChild(link);
 
   const section = document.createElement('section');
   section.className = 'column';
   section.id = id;
+  section.setAttribute('aria-labelledby', id + '-title');
 
   const h2 = document.createElement('h2');
-  h2.innerHTML = `<span class="name"></span><span class="count"></span>`;
+  h2.id = id + '-title';
+  h2.innerHTML = '<span class="key" aria-hidden="true"></span><span class="name"></span>' +
+    '<span class="hint"></span><span class="count"></span>';
+  h2.querySelector('.key').textContent = group.key;
   h2.querySelector('.name').textContent = group.name;
-  h2.querySelector('.count').textContent = `${group.chars.length}자`;
+  h2.querySelector('.hint').textContent = hint;
+  const countEl = h2.querySelector('.count');
   section.appendChild(h2);
 
   const grid = document.createElement('div');
   grid.className = 'grid';
-  for (const ch of group.chars) {
+  const cells = group.chars.map((ch, i) => {
     const cell = document.createElement('button');
     cell.type = 'button';
     cell.className = 'cell';
+    // 그룹마다 한 칸만 Tab으로 들어가고 나머지는 방향키로 이동 (roving tabindex)
+    cell.tabIndex = i === 0 ? 0 : -1;
+    const name = nameOf(ch);
+    const code = codeOf(ch);
     cell.dataset.char = ch;
-    const tip = tooltipOf(ch);
-    if (tip) cell.dataset.tip = tip;
+    cell.dataset.name = name;
+    cell.dataset.code = code;
+    cell.dataset.search = [ch, name, code, group.key, group.name].join('\n').toLowerCase();
+    cell.setAttribute('aria-label', name ? `${name}, ${code}` : code);
     if (LABELS[ch]) {
       cell.classList.add('label');
       cell.textContent = LABELS[ch];
@@ -631,29 +977,124 @@ for (const group of GROUPS) {
       cell.textContent = ch;
     }
     grid.appendChild(cell);
-  }
+    return cell;
+  });
   section.appendChild(grid);
   groupsEl.appendChild(section);
+
+  return { link, section, countEl, cells };
+});
+
+// ---------- 검색 ----------
+
+function setTabStop(cell) {
+  const prev = cell.parentElement.querySelector('.cell[tabindex="0"]');
+  if (prev && prev !== cell) prev.tabIndex = -1;
+  cell.tabIndex = 0;
 }
 
-// 바로가기 메뉴가 여러 줄로 감겨도 섹션 제목이 메뉴에 가려지지 않도록 높이를 반영
-function syncToolbarHeight() {
-  document.documentElement.style.setProperty('--toolbar-h', toolbarEl.offsetHeight + 'px');
+function applyFilter() {
+  const query = searchEl.value.trim().toLowerCase();
+  let total = 0;
+  for (const view of views) {
+    const visible = [];
+    for (const cell of view.cells) {
+      const hit = !query || cell.dataset.search.includes(query);
+      cell.hidden = !hit;
+      if (hit) visible.push(cell);
+    }
+    view.section.hidden = view.link.hidden = visible.length === 0;
+    view.countEl.textContent = query
+      ? `${visible.length} / ${view.cells.length}자`
+      : `${view.cells.length}자`;
+    // Tab으로 들어갈 칸이 걸러져 숨었으면 보이는 첫 칸으로 옮김
+    if (visible.length && !visible.some(cell => cell.tabIndex === 0)) setTabStop(visible[0]);
+    total += visible.length;
+  }
+  resultEl.textContent = query ? `${total}자 찾음` : '';
+  emptyEl.hidden = total > 0;
+  hideTooltip();
+  updateActiveLink();
 }
-syncToolbarHeight();
-window.addEventListener('resize', syncToolbarHeight);
+searchEl.addEventListener('input', applyFilter);
+
+// ---------- 바로가기 메뉴 ----------
+
+// 메뉴가 여러 줄로 감겨도 섹션 제목이 가려지지 않도록 고정 영역 높이를 반영
+function syncStickyHeight() {
+  document.documentElement.style.setProperty('--sticky-h', stickyEl.offsetHeight + 'px');
+}
+
+// 지금 보고 있는 그룹을 메뉴에 표시
+let activeView = null;
+function updateActiveLink() {
+  const shown = views.filter(view => !view.section.hidden);
+  const line = stickyEl.offsetHeight + 12;
+  let current = shown[0] || null;
+  for (const view of shown) {
+    if (view.section.getBoundingClientRect().top > line) break;
+    current = view;
+  }
+  // 마지막 그룹은 짧아서 기준선에 닿지 못할 수 있으므로 문서 끝에서는 마지막 그룹으로 간주
+  if (shown.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+    current = shown[shown.length - 1];
+  }
+  if (current === activeView) return;
+  if (activeView) activeView.link.removeAttribute('aria-current');
+  activeView = current;
+  if (!current) return;
+  current.link.setAttribute('aria-current', 'true');
+  // 메뉴가 가로 스크롤일 때(모바일) 현재 그룹이 보이도록 메뉴만 이동
+  if (toolbarEl.scrollWidth > toolbarEl.clientWidth) {
+    const link = current.link;
+    toolbarEl.scrollLeft = link.offsetLeft - (toolbarEl.clientWidth - link.offsetWidth) / 2;
+  }
+}
+
+function onLayoutChange() {
+  syncStickyHeight();
+  updateActiveLink();
+}
+if ('ResizeObserver' in window) {
+  new ResizeObserver(onLayoutChange).observe(stickyEl);
+} else {
+  window.addEventListener('resize', onLayoutChange);
+}
+
+let scrollQueued = false;
+window.addEventListener('scroll', () => {
+  hideTooltip();
+  if (scrollQueued) return;
+  scrollQueued = true;
+  requestAnimationFrame(() => {
+    scrollQueued = false;
+    updateActiveLink();
+  });
+}, { passive: true });
+
+// ---------- 툴팁 ----------
 
 // 브라우저 기본 title 툴팁은 지연이 있어 직접 그린 툴팁을 즉시 표시
 function showTooltip(cell) {
-  tooltipEl.textContent = cell.dataset.tip;
+  const { name, code } = cell.dataset;
+  tooltipEl.textContent = name ? name + ' · ' : '';
+  const codeEl = document.createElement('span');
+  codeEl.className = 'code';
+  codeEl.textContent = code;
+  tooltipEl.appendChild(codeEl);
+
+  // 크기를 재기 전에 왼쪽 위로 옮겨 화면 폭에 눌리지 않게 함
+  tooltipEl.style.left = '0px';
+  tooltipEl.style.top = '0px';
   tooltipEl.hidden = false;
   const rect = cell.getBoundingClientRect();
   const tipRect = tooltipEl.getBoundingClientRect();
+  const viewportWidth = document.documentElement.clientWidth;
   const margin = 6;
   let left = rect.left + rect.width / 2 - tipRect.width / 2;
-  left = Math.max(margin, Math.min(left, window.innerWidth - tipRect.width - margin));
+  left = Math.max(margin, Math.min(left, viewportWidth - tipRect.width - margin));
   let top = rect.top - tipRect.height - margin;
-  if (top < margin) top = rect.bottom + margin;
+  if (top < stickyEl.getBoundingClientRect().bottom) top = rect.bottom + margin;
   tooltipEl.style.left = left + 'px';
   tooltipEl.style.top = top + 'px';
 }
@@ -662,49 +1103,122 @@ function hideTooltip() {
   tooltipEl.hidden = true;
 }
 
-groupsEl.addEventListener('mouseover', (e) => {
+// 터치에서는 누른 뒤 툴팁이 계속 남으므로 마우스·펜으로 가리킬 때만 표시 (터치는 복사 알림에 명칭 표시)
+groupsEl.addEventListener('pointerover', (e) => {
+  if (e.pointerType === 'touch') return;
   const cell = e.target.closest('.cell');
-  if (cell && cell.dataset.tip) showTooltip(cell);
+  if (cell) showTooltip(cell);
   else hideTooltip();
 });
-groupsEl.addEventListener('mouseleave', hideTooltip);
+groupsEl.addEventListener('pointerleave', hideTooltip);
 groupsEl.addEventListener('focusin', (e) => {
   const cell = e.target.closest('.cell');
-  if (cell && cell.dataset.tip) showTooltip(cell);
-  else hideTooltip();
+  if (!cell) return;
+  setTabStop(cell);
+  // 키보드로 옮겨 온 경우에만 표시
+  if (cell.matches(':focus-visible')) showTooltip(cell);
 });
 groupsEl.addEventListener('focusout', hideTooltip);
-window.addEventListener('scroll', hideTooltip, { passive: true });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideTooltip();
+});
 
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch (err) {
-    const temp = document.createElement('textarea');
-    temp.value = text;
-    document.body.appendChild(temp);
-    temp.select();
-    document.execCommand('copy');
-    temp.remove();
+// ---------- 방향키 이동 ----------
+
+groupsEl.addEventListener('keydown', (e) => {
+  const cell = e.target.closest('.cell');
+  if (!cell || e.altKey || e.ctrlKey || e.metaKey) return;
+
+  const visible = Array.from(cell.parentElement.children).filter(c => !c.hidden);
+  const index = visible.indexOf(cell);
+  const last = visible.length - 1;
+  // 첫 줄에 놓인 칸 수 = 한 줄의 칸 수
+  const cols = visible.filter(c => c.offsetTop === visible[0].offsetTop).length;
+  let next;
+  switch (e.key) {
+    case 'ArrowRight': next = index + 1; break;
+    case 'ArrowLeft': next = index - 1; break;
+    case 'ArrowUp': next = index - cols; break;
+    case 'ArrowDown':
+      next = index + cols;
+      // 바로 아래 칸이 없어도 아랫줄이 있으면 그 줄의 마지막 칸으로
+      if (next > last && Math.floor(index / cols) < Math.floor(last / cols)) next = last;
+      break;
+    case 'Home': next = 0; break;
+    case 'End': next = last; break;
+    default: return;
   }
+  e.preventDefault();
+  if (next < 0 || next > last) return;
+  visible[next].focus();
+});
+
+// ---------- 복사 ----------
+
+// 복사에 성공하면 true
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      // 권한 거부 등으로 실패하면 아래 방식으로 다시 시도
+    }
+  }
+  const active = document.activeElement;
+  const temp = document.createElement('textarea');
+  temp.value = text;
+  temp.readOnly = true;
+  temp.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(temp);
+  temp.select();
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch (err) {
+    ok = false;
+  }
+  temp.remove();
+  if (active && active.focus) active.focus({ preventScroll: true });
+  return ok;
 }
 
 let statusTimer;
+function showStatus(message, isError) {
+  statusEl.classList.toggle('error', Boolean(isError));
+  // 같은 문구가 이어져도 스크린 리더가 다시 읽도록 비웠다가 채움
+  statusEl.textContent = '';
+  requestAnimationFrame(() => {
+    statusEl.textContent = message;
+    statusEl.classList.add('show');
+  });
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => statusEl.classList.remove('show'), isError ? 2500 : 1500);
+}
+
+const copiedTimers = new WeakMap();
 groupsEl.addEventListener('click', async (e) => {
   const cell = e.target.closest('.cell');
   if (!cell) return;
 
   const ch = cell.dataset.char;
-  await copyText(ch);
+  const shown = LABELS[ch] || ch;
+  if (!(await copyText(ch))) {
+    showStatus(`복사하지 못했습니다: ${shown} (${cell.dataset.code})`, true);
+    return;
+  }
 
   cell.classList.add('copied');
-  setTimeout(() => cell.classList.remove('copied'), 600);
+  clearTimeout(copiedTimers.get(cell));
+  copiedTimers.set(cell, setTimeout(() => cell.classList.remove('copied'), 600));
 
-  statusEl.textContent = `복사됨: ${LABELS[ch] || ch} (${codeOf(ch)})`;
-  statusEl.classList.add('show');
-  clearTimeout(statusTimer);
-  statusTimer = setTimeout(() => statusEl.classList.remove('show'), 1200);
+  const { ko = '', en = '' } = NAMES[ch] || {};
+  const name = ko || en;
+  showStatus(`복사됨: ${shown}${name ? ' ' + name : ''} (${cell.dataset.code})`);
 });
+
+applyFilter();
+onLayoutChange();
 </script>
 
 </body>
