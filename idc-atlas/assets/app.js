@@ -432,18 +432,25 @@
     syncNav(head);
     updateCounts();
     $('#foot-time').textContent = new Date().toLocaleString('ko-KR');
-    // 같은 화면 안에서 정렬·필터·선택만 바뀐 경우에는 스크롤 위치를 유지
-    if (r.path !== lastPath) window.scrollTo({ top: 0 });
+    // 같은 화면 안에서 정렬·필터·선택만 바뀐 경우에는 스크롤 위치와 포커스를 유지
+    if (r.path !== lastPath) {
+      window.scrollTo({ top: 0 });
+      const h1 = $('#main h1');
+      document.title = (h1 ? h1.textContent.trim() + ' — ' : '') + 'IDC Atlas';
+      // 화면 전환을 스크린 리더·키보드 사용자에게 알리도록 새 쪽 제목으로 포커스 이동 (첫 로드 제외)
+      if (lastPath !== null && h1 && !modalEl.open) { h1.tabIndex = -1; h1.focus({ preventScroll: true }); }
+    }
     lastPath = r.path;
   }
 
   function syncNav(head) {
     $$('#nav .nav-item, .sidebar-foot .nav-item').forEach((a) => {
       const match = (a.dataset.match || '').split(',');
-      a.classList.toggle('active', match.includes(head));
+      const on = match.includes(head);
+      a.classList.toggle('active', on);
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    document.body.classList.remove('nav-open');
-    $('#scrim').hidden = true;
+    setNav(false);
   }
 
   function updateCounts() {
@@ -474,13 +481,23 @@
       </div>`;
   }
 
+  /**
+   * 정렬 가능한 열 제목 — <th> 안의 <button> 으로 키보드 조작을 지원하고,
+   * 현재 정렬 열에만 aria-sort 를 붙여 스크린 리더에 정렬 상태를 알린다.
+   */
+  function sortHeader(c, sortState, sortNs) {
+    // 'noop' 표는 정렬 순서가 고정돼 있으므로 누를 수 없는 일반 제목으로 둔다
+    if (sortNs === 'noop') return `<th scope="col" class="${c.cls || ''}">${esc(c.label)}</th>`;
+    const on = sortState.key === c.key;
+    const aria = on ? ` aria-sort="${sortState.dir > 0 ? 'ascending' : 'descending'}"` : '';
+    return `<th scope="col" class="${c.cls || ''} sortable ${on ? 'sorted' : ''}"${aria}>` +
+      `<button type="button" class="sort-btn" data-sort="${sortNs}:${c.key}">${esc(c.label)}` +
+      `<span class="arrow" aria-hidden="true">${on ? (sortState.dir > 0 ? '▲' : '▼') : '◆'}</span></button></th>`;
+  }
+
   function sortableTable(cols, rows, sortState, sortNs, opts) {
     opts = opts || {};
-    const head = cols.map((c) => {
-      const on = sortState.key === c.key;
-      return `<th class="${c.cls || ''} sortable ${on ? 'sorted' : ''}" data-sort="${sortNs}:${c.key}">
-        ${esc(c.label)}<span class="arrow">${on ? (sortState.dir > 0 ? '▲' : '▼') : '◆'}</span></th>`;
-    }).join('');
+    const head = cols.map((c) => sortHeader(c, sortState, sortNs)).join('');
 
     // opts.select = { set: Set<id>, attr: 'dev' } → 행 앞에 선택 체크박스
     const sel = opts.select;
@@ -644,10 +661,10 @@
         select: { set: s.selected, attr: 'dev' },
         rowClass: (r) => (r.inService ? '' : 'off'),
         rowActions: (r) => `
-          <a class="rowbtn" href="#/physical?racks=${esc(r.rackId)}&focus=${esc(r.id)}" title="랙에서 보기">📐</a>
-          <button class="rowbtn mutating" data-action="edit-device" data-id="${esc(r.id)}" title="편집">✎</button>
-          <button class="rowbtn mutating" data-action="copy-device" data-id="${esc(r.id)}" title="복사">⧉</button>
-          <button class="rowbtn del mutating" data-action="del-device" data-id="${esc(r.id)}" title="삭제">🗑</button>`
+          <a class="rowbtn" href="#/physical?racks=${esc(r.rackId)}&focus=${esc(r.id)}" title="랙에서 보기" aria-label="랙에서 보기">📐</a>
+          <button class="rowbtn mutating" data-action="edit-device" data-id="${esc(r.id)}" title="편집" aria-label="편집">✎</button>
+          <button class="rowbtn mutating" data-action="copy-device" data-id="${esc(r.id)}" title="복사" aria-label="복사">⧉</button>
+          <button class="rowbtn del mutating" data-action="del-device" data-id="${esc(r.id)}" title="삭제" aria-label="삭제">🗑</button>`
       })}
     </div>`;
   }
@@ -710,8 +727,8 @@
           <td class="mono">${nz(i.iface)}</td>
           <td>${sn ? `${esc(sn.cidr)}<span class="sub">${esc(vlanLabel(vl) || sn.name)}</span>` : nz('')}</td>
           <td class="actions">
-            <button class="rowbtn mutating" data-action="edit-ip" data-id="${esc(i.id)}" title="편집">✎</button>
-            <button class="rowbtn del mutating" data-action="del-ip" data-id="${esc(i.id)}" title="할당 해제">✕</button>
+            <button class="rowbtn mutating" data-action="edit-ip" data-id="${esc(i.id)}" title="편집" aria-label="편집">✎</button>
+            <button class="rowbtn del mutating" data-action="del-ip" data-id="${esc(i.id)}" title="할당 해제" aria-label="할당 해제">✕</button>
           </td></tr>`;
       }).join('')}</tbody></table></div>`;
   }
@@ -865,20 +882,17 @@
     const totalU = db.racks.reduce((s, r) => s + r.sizeU, 0);
     const usedU = db.racks.reduce((s, r) => s + rackStats(r).used, 0);
 
-    const head = RACK_COLUMNS.map((c) => {
-      const on = state.racks.sort.key === c.key;
-      return `<th class="${c.cls || ''} sortable ${on ? 'sorted' : ''}" data-sort="racks:${c.key}">${esc(c.label)}<span class="arrow">${on ? (state.racks.sort.dir > 0 ? '▲' : '▼') : '◆'}</span></th>`;
-    }).join('');
+    const head = RACK_COLUMNS.map((c) => sortHeader(c, state.racks.sort, 'racks')).join('');
 
     const body = rows.map((r) => `
       <tr>
         <td><input type="checkbox" data-rack-sel="${esc(r.rack.id)}" ${sel.has(r.rack.id) ? 'checked' : ''} aria-label="${esc(r.rack.name)} 선택"></td>
         ${RACK_COLUMNS.map((c) => `<td class="${c.cls || ''}">${c.html ? c.html(r) : esc(c.value(r))}</td>`).join('')}
         <td class="actions">
-          <a class="rowbtn" href="#/physical?racks=${esc(r.rack.id)}" title="실장도">📐</a>
-          <button class="rowbtn mutating" data-action="edit-rack" data-id="${esc(r.rack.id)}" title="편집">✎</button>
-          <button class="rowbtn mutating" data-action="copy-rack" data-id="${esc(r.rack.id)}" title="복사">⧉</button>
-          <button class="rowbtn del mutating" data-action="del-rack" data-id="${esc(r.rack.id)}" title="삭제">🗑</button>
+          <a class="rowbtn" href="#/physical?racks=${esc(r.rack.id)}" title="실장도" aria-label="실장도">📐</a>
+          <button class="rowbtn mutating" data-action="edit-rack" data-id="${esc(r.rack.id)}" title="편집" aria-label="편집">✎</button>
+          <button class="rowbtn mutating" data-action="copy-rack" data-id="${esc(r.rack.id)}" title="복사" aria-label="복사">⧉</button>
+          <button class="rowbtn del mutating" data-action="del-rack" data-id="${esc(r.rack.id)}" title="삭제" aria-label="삭제">🗑</button>
         </td>
       </tr>`).join('');
 
@@ -969,7 +983,7 @@
         <h3><a href="#/rack/${esc(rk.id)}">${esc(rk.name)}</a></h3>
         <span class="loc">${esc(rackLocation(rk))}</span>
         <span class="tools">
-          <button class="rowbtn mutating" data-action="edit-rack" data-id="${esc(rk.id)}" title="랙 편집">✎</button>
+          <button class="rowbtn mutating" data-action="edit-rack" data-id="${esc(rk.id)}" title="랙 편집" aria-label="랙 편집">✎</button>
         </span>
       </div>
       <div class="rack-body">
@@ -1035,15 +1049,12 @@
 
   function renderApps() {
     const rows = applySort(db.apps, state.apps.sort, APP_COLUMNS);
-    const head = APP_COLUMNS.map((c) => {
-      const on = state.apps.sort.key === c.key;
-      return `<th class="${c.cls || ''} sortable ${on ? 'sorted' : ''}" data-sort="apps:${c.key}">${esc(c.label)}<span class="arrow">${on ? (state.apps.sort.dir > 0 ? '▲' : '▼') : '◆'}</span></th>`;
-    }).join('');
+    const head = APP_COLUMNS.map((c) => sortHeader(c, state.apps.sort, 'apps')).join('');
     const body = rows.map((a) => `<tr>
       ${APP_COLUMNS.map((c) => `<td class="${c.cls || ''}">${c.html ? c.html(a) : esc(c.value(a))}</td>`).join('')}
       <td class="actions">
-        <button class="rowbtn mutating" data-action="edit-app" data-id="${esc(a.id)}" title="편집">✎</button>
-        <button class="rowbtn del mutating" data-action="del-app" data-id="${esc(a.id)}" title="삭제">🗑</button>
+        <button class="rowbtn mutating" data-action="edit-app" data-id="${esc(a.id)}" title="편집" aria-label="편집">✎</button>
+        <button class="rowbtn del mutating" data-action="del-app" data-id="${esc(a.id)}" title="삭제" aria-label="삭제">🗑</button>
       </td></tr>`).join('');
 
     return pageHead('앱', `${db.apps.length}개 앱 · 장비에 연결된 서비스/애플리케이션`, `
@@ -1210,9 +1221,9 @@
         ${sortableTable(SUBNET_COLUMNS, rows, f.sort, 'ipam', {
           rowClass: (x) => (x.st.pct >= 90 ? 'hot' : ''),
           rowActions: (x) => `
-            <button class="rowbtn mutating" data-action="add-ip" data-subnet="${esc(x.s.id)}" title="다음 빈 IP 할당">＋</button>
-            <button class="rowbtn mutating" data-action="edit-subnet" data-id="${esc(x.s.id)}" title="편집">✎</button>
-            <button class="rowbtn del mutating" data-action="del-subnet" data-id="${esc(x.s.id)}" title="삭제">🗑</button>`
+            <button class="rowbtn mutating" data-action="add-ip" data-subnet="${esc(x.s.id)}" title="다음 빈 IP 할당" aria-label="다음 빈 IP 할당">＋</button>
+            <button class="rowbtn mutating" data-action="edit-subnet" data-id="${esc(x.s.id)}" title="편집" aria-label="편집">✎</button>
+            <button class="rowbtn del mutating" data-action="del-subnet" data-id="${esc(x.s.id)}" title="삭제" aria-label="삭제">🗑</button>`
         })}`;
     } else if (tab === 'ips') {
       const f = state.ips;
@@ -1230,16 +1241,16 @@
         ${sortableTable(IP_COLUMNS, rows, f.sort, 'ips', {
           rowClass: (x) => (x.conflict ? 'conflict' : ''),
           rowActions: (x) => `
-            <button class="rowbtn mutating" data-action="edit-ip" data-id="${esc(x.id)}" title="편집">✎</button>
-            <button class="rowbtn del mutating" data-action="del-ip" data-id="${esc(x.id)}" title="삭제">🗑</button>`
+            <button class="rowbtn mutating" data-action="edit-ip" data-id="${esc(x.id)}" title="편집" aria-label="편집">✎</button>
+            <button class="rowbtn del mutating" data-action="del-ip" data-id="${esc(x.id)}" title="삭제" aria-label="삭제">🗑</button>`
         })}`;
     } else {
       const rows = applySort(db.vlans, state.vlans.sort, VLAN_COLUMNS);
       actions = `<button class="btn primary mutating" data-action="add-vlan">＋ VLAN 추가</button>`;
       body = sortableTable(VLAN_COLUMNS, rows, state.vlans.sort, 'vlans', {
         rowActions: (v) => `
-          <button class="rowbtn mutating" data-action="edit-vlan" data-id="${esc(v.id)}" title="편집">✎</button>
-          <button class="rowbtn del mutating" data-action="del-vlan" data-id="${esc(v.id)}" title="삭제">🗑</button>`
+          <button class="rowbtn mutating" data-action="edit-vlan" data-id="${esc(v.id)}" title="편집" aria-label="편집">✎</button>
+          <button class="rowbtn del mutating" data-action="del-vlan" data-id="${esc(v.id)}" title="삭제" aria-label="삭제">🗑</button>`
       });
     }
 
@@ -1345,8 +1356,8 @@
       ${sortableTable(cols, rows, { key: 'address', dir: 1 }, 'noop', {
         rowClass: (x) => (x.conflict ? 'conflict' : '') + (x.address === r.query.hl ? ' picked' : ''),
         rowActions: (x) => `
-          <button class="rowbtn mutating" data-action="edit-ip" data-id="${esc(x.id)}" title="편집">✎</button>
-          <button class="rowbtn del mutating" data-action="del-ip" data-id="${esc(x.id)}" title="삭제">🗑</button>`
+          <button class="rowbtn mutating" data-action="edit-ip" data-id="${esc(x.id)}" title="편집" aria-label="편집">✎</button>
+          <button class="rowbtn del mutating" data-action="del-ip" data-id="${esc(x.id)}" title="삭제" aria-label="삭제">🗑</button>`
       })}
     </div>`;
   }
@@ -1803,8 +1814,8 @@
         <tbody>${rows.map((x) => `<tr>
           ${sec.cols.map((c) => `<td class="${c.cls || ''}">${nz(c.v(x))}</td>`).join('')}
           <td class="actions">
-            <button class="rowbtn mutating" data-action="cfg-edit" data-sec="${esc(key)}" data-id="${esc(x.id)}" title="편집">✎</button>
-            <button class="rowbtn del mutating" data-action="cfg-del" data-sec="${esc(key)}" data-id="${esc(x.id)}" title="삭제">🗑</button>
+            <button class="rowbtn mutating" data-action="cfg-edit" data-sec="${esc(key)}" data-id="${esc(x.id)}" title="편집" aria-label="편집">✎</button>
+            <button class="rowbtn del mutating" data-action="cfg-del" data-sec="${esc(key)}" data-id="${esc(x.id)}" title="삭제" aria-label="삭제">🗑</button>
           </td></tr>`).join('')}</tbody>
       </table></div>
     </div>`;
@@ -1924,28 +1935,67 @@
   /* ======================================================================
      12. 모달 / 폼
      ====================================================================== */
+  /*
+   * 모달은 네이티브 <dialog> + showModal() 로 띄운다.
+   * 브라우저가 뒤쪽 페이지 inert 처리, 포커스 가두기, Esc/뒤로 가기 닫기, 최상위 레이어를 맡는다.
+   * 바깥(배경) 클릭 닫기는 closedby="any", 이를 모르는 브라우저(Safari)는 아래 폴백으로 처리.
+   */
   let modalSubmit = null;
+  let modalReturn = null;   // 닫은 뒤 포커스를 돌려줄 요소의 선택자 (render 로 원래 요소가 사라질 수 있어서)
+  const modalEl = $('#modal');
+
+  /** 클릭한 요소를 다시 그린 화면에서도 찾을 수 있도록 선택자로 기억 */
+  function focusKey(el) {
+    if (!el || el === document.body) return null;
+    if (el.id) return '#' + CSS.escape(el.id);
+    const a = el.dataset && el.dataset.action;
+    if (a) return `[data-action="${CSS.escape(a)}"]` + (el.dataset.id ? `[data-id="${CSS.escape(el.dataset.id)}"]` : '');
+    return null;
+  }
 
   function closeModal() {
-    $('#modal-root').innerHTML = '';
+    if (modalEl.open) modalEl.close();
+  }
+
+  modalEl.addEventListener('close', function () {
+    if (modalEl.open) return;   // 닫힘 이벤트가 오기 전에 다른 모달이 다시 열린 경우
     modalSubmit = null;
+    modalEl.replaceChildren();
+    // 원래 호출 버튼이 다시 그려져 사라졌다면 같은 동작의 버튼, 그것도 없으면 본문으로 포커스 이동
+    if (!modalEl.contains(document.activeElement) && document.activeElement !== document.body) return;
+    const target = (modalReturn && $(modalReturn)) || $('#main');
+    if (target) target.focus({ preventScroll: true });
+  });
+
+  if (!('closedBy' in HTMLDialogElement.prototype)) {
+    // closedby 미지원 브라우저용 바깥 클릭 닫기 — 누름과 뗌이 모두 대화상자 바깥일 때만
+    // (입력창에서 텍스트를 드래그 선택하다 배경에서 손을 떼는 경우 닫히지 않도록)
+    const outside = (e) => {
+      const r = modalEl.getBoundingClientRect();
+      return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+    };
+    let pressedOutside = false;
+    modalEl.addEventListener('pointerdown', (e) => { pressedOutside = e.target === modalEl && outside(e); });
+    modalEl.addEventListener('pointerup', (e) => { if (pressedOutside && e.target === modalEl && outside(e)) closeModal(); pressedOutside = false; });
   }
 
   function openModal(title, bodyHtml, footHtml, onSubmit, wide) {
     modalSubmit = onSubmit || null;
-    $('#modal-root').innerHTML = `
-      <div class="modal-back" data-modal-back>
-        <div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-          <form id="modal-form">
-            <div class="modal-head"><h2>${esc(title)}</h2>
-              <button type="button" class="icon-btn close" data-modal-close aria-label="닫기">✕</button></div>
-            <div class="modal-body">${bodyHtml}</div>
-            <div class="modal-foot">${footHtml}</div>
-          </form>
-        </div>
-      </div>`;
-    const first = $('#modal-form input:not([type=hidden]), #modal-form select, #modal-form textarea');
-    if (first) first.focus();
+    if (!modalEl.open) modalReturn = focusKey(document.activeElement);
+    modalEl.className = 'modal' + (wide ? ' wide' : '');
+    modalEl.innerHTML = `
+      <form id="modal-form">
+        <div class="modal-head"><h2 id="modal-title">${esc(title)}</h2>
+          <button type="button" class="icon-btn close" data-modal-close aria-label="닫기">✕</button></div>
+        <div class="modal-body">${bodyHtml}</div>
+        <div class="modal-foot">${footHtml}</div>
+      </form>`;
+    // 첫 입력칸, 없으면(확인 창) 안전한 쪽인 '취소' 버튼에 초기 포커스
+    const first = $('#modal-form .modal-body :is(input:not([type=hidden]), select, textarea)') ||
+                  $('#modal-form .modal-foot [data-modal-close]');
+    if (first) first.autofocus = true;
+    if (modalEl.open) { if (first) first.focus(); }
+    else modalEl.showModal();
   }
 
   function confirmModal(title, message, confirmLabel, onOk) {
@@ -2532,17 +2582,20 @@
     const t = e.target;
 
     /* 모달 닫기 */
-    if (t.closest('[data-modal-close]') || t.hasAttribute('data-modal-back')) { closeModal(); return; }
+    if (t.closest('[data-modal-close]')) { closeModal(); return; }
 
     /* 정렬 */
     const sortEl = t.closest('[data-sort]');
     if (sortEl) {
       const [ns, key] = sortEl.dataset.sort.split(':');
-      if (ns !== 'noop' && state[ns]) {
+      if (state[ns]) {
         const s = state[ns].sort;
         s.dir = s.key === key ? -s.dir : 1;
         s.key = key;
         render();
+        // 표 전체를 다시 그리므로, 누른 열 제목 버튼에 포커스를 되돌린다
+        const again = $(`[data-sort="${ns}:${key}"]`);
+        if (again) again.focus({ preventScroll: true });
       }
       return;
     }
@@ -2915,7 +2968,8 @@
 
   /* 키보드 단축키 */
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && $('#modal-root').innerHTML) { closeModal(); return; }
+    if (e.key === 'Escape' && document.body.classList.contains('nav-open')) { setNav(false, true); return; }
+    if (modalEl.open) return;
     if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
       e.preventDefault();
       $('#search-input').focus();
@@ -2923,29 +2977,54 @@
   });
 
   /* 상단바 버튼 */
+  /* 테마 — 저장값이 없으면 시스템 설정을 따른다.
+     전환 시 결과가 시스템 설정과 같아지면 저장값을 지워 다시 시스템을 따르게 한다. */
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+  const systemTheme = () => (systemDark.matches ? 'dark' : 'light');
+  function storedTheme() {
+    try {
+      const t = localStorage.getItem(THEME_KEY) || localStorage.getItem('rm-theme');
+      return t === 'light' || t === 'dark' ? t : null;
+    } catch (err) { return null; }
+  }
+  function applyTheme(t) {
+    document.documentElement.dataset.theme = t;
+    $('#theme-btn').setAttribute('aria-label', t === 'dark' ? '밝은 테마로 전환' : '어두운 테마로 전환');
+  }
   $('#theme-btn').addEventListener('click', function () {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem(THEME_KEY, next); } catch (err) { /* 무시 */ }
+    try {
+      localStorage.removeItem('rm-theme');
+      if (next === systemTheme()) localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, next);
+    } catch (err) { /* 저장하지 못해도 화면에는 적용 */ }
+    applyTheme(next);
   });
+  systemDark.addEventListener('change', () => { if (!storedTheme()) applyTheme(systemTheme()); });
+  window.addEventListener('storage', (e) => { if (e.key === THEME_KEY) applyTheme(storedTheme() || systemTheme()); });
+
   $('#print-btn').addEventListener('click', () => window.print());
-  $('#menu-btn').addEventListener('click', function () {
-    document.body.classList.toggle('nav-open');
-    $('#scrim').hidden = !document.body.classList.contains('nav-open');
-  });
-  $('#scrim').addEventListener('click', function () {
-    document.body.classList.remove('nav-open');
-    this.hidden = true;
-  });
+
+  /* 모바일 메뉴 서랍 — 열린 동안 나머지 화면은 inert, Esc · 배경 클릭으로 닫고 메뉴 버튼으로 포커스 복귀 */
+  const BEHIND_DRAWER = ['.topbar', '#main', '.appfoot'];
+  function setNav(open, restoreFocus) {
+    const was = document.body.classList.contains('nav-open');
+    document.body.classList.toggle('nav-open', open);
+    $('#scrim').hidden = !open;
+    $('#menu-btn').setAttribute('aria-expanded', String(open));
+    BEHIND_DRAWER.forEach((sel) => { const el = $(sel); if (el) el.inert = open; });
+    if (open && !was) { const cur = $('#nav .nav-item.active') || $('#nav .nav-item'); if (cur) cur.focus(); }
+    if (!open && was && restoreFocus) $('#menu-btn').focus();
+  }
+  $('#menu-btn').addEventListener('click', () => setNav(!document.body.classList.contains('nav-open')));
+  $('#scrim').addEventListener('click', () => setNav(false, true));
+  // 화면이 넓어져 서랍이 고정 사이드바로 바뀌면 열린 상태(inert 포함)를 정리
+  window.matchMedia('(min-width: 1001px)').addEventListener('change', (e) => { if (e.matches) setNav(false); });
 
   /* ======================================================================
      15. 시작
      ====================================================================== */
-  try {
-    const saved = localStorage.getItem(THEME_KEY) || localStorage.getItem('rm-theme');
-    if (saved) document.documentElement.dataset.theme = saved;
-    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme = 'dark';
-  } catch (err) { /* 무시 */ }
+  applyTheme(storedTheme() || systemTheme());
 
   restore();
   normalize();

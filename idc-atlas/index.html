@@ -1,13 +1,23 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="light">
+<html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IDC Atlas — IDC 랙 · IP · 장비 통합 관리</title>
 <meta name="description" content="오픈소스 RackManager 1.2.5 기능 명세를 기반으로 IP 주소 관리(IPAM)·장비 라이프사이클·전력·변경 이력까지 확장한 IDC 자원 관리 프로토타입">
+<meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<script>
+  /* 첫 페인트 전에 테마를 정해 깜빡임을 막는다 — 저장값이 없으면 시스템 설정을 따른다 (나머지 처리는 app.js) */
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('idc-atlas-theme') || localStorage.getItem('rm-theme'); } catch (e) {}
+    if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
 <!-- 캐시 버스팅: style.css/data.js/app.js를 수정할 때마다 아래 ?v= 값을 올려주세요 -->
-<link rel="stylesheet" href="./assets/style.css?v=8">
+<link rel="stylesheet" href="./assets/style.css?v=9">
 </head>
 <body>
 
@@ -32,28 +42,28 @@
 
     <nav class="nav" id="nav" aria-label="주요 메뉴">
       <a class="nav-item" href="#/dashboard"      data-match="dashboard">
-        <span class="ni">🏠</span> 대시보드 <span class="nav-count" data-count="alerts" title="점검 필요 항목"></span></a>
+        <span class="ni" aria-hidden="true">🏠</span> 대시보드 <span class="nav-count" data-count="alerts" title="점검 필요 항목"></span></a>
       <a class="nav-item" href="#/devices"        data-match="devices,device">
-        <span class="ni">🖥️</span> 장비 <span class="nav-count" data-count="devices"></span></a>
+        <span class="ni" aria-hidden="true">🖥️</span> 장비 <span class="nav-count" data-count="devices"></span></a>
       <a class="nav-item" href="#/racks"          data-match="racks,rack">
-        <span class="ni">🗄️</span> 랙 <span class="nav-count" data-count="racks"></span></a>
+        <span class="ni" aria-hidden="true">🗄️</span> 랙 <span class="nav-count" data-count="racks"></span></a>
       <a class="nav-item" href="#/physical"       data-match="physical">
-        <span class="ni">📐</span> 랙 실장도</a>
+        <span class="ni" aria-hidden="true">📐</span> 랙 실장도</a>
       <a class="nav-item" href="#/ipam"           data-match="ipam,subnet">
-        <span class="ni">🌐</span> IP 관리 <span class="nav-count" data-count="subnets"></span></a>
+        <span class="ni" aria-hidden="true">🌐</span> IP 관리 <span class="nav-count" data-count="subnets"></span></a>
       <a class="nav-item" href="#/apps"           data-match="apps,app">
-        <span class="ni">🧩</span> 앱 <span class="nav-count" data-count="apps"></span></a>
+        <span class="ni" aria-hidden="true">🧩</span> 앱 <span class="nav-count" data-count="apps"></span></a>
       <a class="nav-item" href="#/reports"        data-match="reports">
-        <span class="ni">📊</span> 리포트</a>
+        <span class="ni" aria-hidden="true">📊</span> 리포트</a>
       <a class="nav-item" href="#/activity"       data-match="activity">
-        <span class="ni">🕘</span> 활동 로그</a>
+        <span class="ni" aria-hidden="true">🕘</span> 활동 로그</a>
       <a class="nav-item" href="#/config"         data-match="config">
-        <span class="ni">⚙️</span> 설정</a>
+        <span class="ni" aria-hidden="true">⚙️</span> 설정</a>
     </nav>
 
     <div class="sidebar-foot">
       <a class="nav-item subtle" href="#/system"  data-match="system">
-        <span class="ni">ℹ️</span> 시스템 정보</a>
+        <span class="ni" aria-hidden="true">ℹ️</span> 시스템 정보</a>
       <label class="ro-toggle" title="읽기 전용 모드에서는 추가·수정·삭제가 비활성화됩니다">
         <input type="checkbox" id="readonly-toggle"> <span>읽기 전용 모드</span>
       </label>
@@ -62,17 +72,17 @@
 
   <!-- ===== Topbar ===== -->
   <header class="topbar">
-    <button class="icon-btn only-mobile" id="menu-btn" aria-label="메뉴 열기">☰</button>
+    <button type="button" class="icon-btn only-mobile" id="menu-btn" aria-label="메뉴" aria-expanded="false" aria-controls="sidebar">☰</button>
 
     <form class="search" id="search-form" role="search">
       <span class="search-ico" aria-hidden="true">🔎</span>
       <input type="search" id="search-input" placeholder="장비명 · 시리얼 · 자산번호 · IP · 서브넷 검색 (예: web, 10.11.0.)" autocomplete="off" aria-label="통합 검색">
-      <kbd>/</kbd>
+      <kbd aria-hidden="true">/</kbd>
     </form>
 
     <div class="topbar-right">
-      <button class="icon-btn" id="print-btn" title="현재 화면 인쇄">🖨️</button>
-      <button class="icon-btn" id="theme-btn" title="테마 전환">🌗</button>
+      <button type="button" class="icon-btn" id="print-btn" title="현재 화면 인쇄" aria-label="현재 화면 인쇄">🖨️</button>
+      <button type="button" class="icon-btn" id="theme-btn" title="테마 전환" aria-label="어두운 테마로 전환">🌗</button>
       <div class="who" title="접속 계정">
         <span class="avatar">R</span>
         <span class="who-text"><strong>atlas-admin</strong><small>10.20.30.41</small></span>
@@ -97,11 +107,11 @@
 </div>
 
 <div class="scrim" id="scrim" hidden></div>
-<div id="modal-root"></div>
-<div id="toast-root" class="toast-root" aria-live="polite"></div>
+<dialog id="modal" class="modal" closedby="any" aria-labelledby="modal-title"></dialog>
+<div id="toast-root" class="toast-root" role="status" aria-live="polite"></div>
 
-<script src="./assets/ipam-core.js?v=8"></script>
-<script src="./assets/data.js?v=8"></script>
-<script src="./assets/app.js?v=8"></script>
+<script src="./assets/ipam-core.js?v=9"></script>
+<script src="./assets/data.js?v=9"></script>
+<script src="./assets/app.js?v=9"></script>
 </body>
 </html>
