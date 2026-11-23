@@ -2,16 +2,20 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="description" content="Windows 한국어 입력기에서 한글 자음 + 한자 키로 입력하는 특수문자 전체 목록. 클릭하면 복사됩니다.">
 <title>한글 자음 + 한자 특수문자표 · Toolbox</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="assets/toolbox.css">
 <style>
+  /* 검색창: 화면 위에 고정 */
   .sticky {
     position: sticky;
     top: 0;
-    z-index: 5;
+    z-index: 6;
     padding: 10px 0;
     margin-bottom: 8px;
     background: var(--bg);
@@ -20,55 +24,60 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 8px;
   }
   .search .field { flex: 1; min-width: 0; max-width: 360px; }
+
+  /* 데스크톱: 왼쪽에 자음 키캡 레일 + 오른쪽에 문자 그룹 */
+  .sc-layout {
+    display: grid;
+    grid-template-columns: 196px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
   .toolbar {
-    position: relative;
+    position: sticky;
+    top: calc(var(--sticky-h, 60px) + 8px);
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    gap: 2px;
+    max-height: calc(100vh - var(--sticky-h, 60px) - 24px);
+    overflow-y: auto;
+    scrollbar-width: thin;
   }
   .toolbar a {
-    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px 4px 4px;
     font-size: 13px;
-    font-weight: 600;
-    text-align: center;
+    font-weight: 500;
+    line-height: 1.3;
     text-decoration: none;
-    color: var(--accent);
-    background: var(--surface);
-    border: 1px solid var(--border);
+    color: var(--text-sub);
     border-radius: var(--radius);
   }
-  .toolbar a .key { margin-right: 5px; color: var(--text-muted); }
-  .toolbar a:hover,
-  .toolbar a[aria-current] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
-  .toolbar a:hover .key,
-  .toolbar a[aria-current] .key { color: inherit; }
-  .toolbar a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .toolbar a .keycap { flex: none; font-size: 13px; }
+  .toolbar a:hover { background: var(--neutral); color: var(--text); }
+  .toolbar a[aria-current] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .toolbar a[aria-current] .keycap { color: var(--accent-fg); background: var(--accent); border-color: var(--accent-hover); }
+  .toolbar a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
   .group {
     margin-bottom: 20px;
-    scroll-margin-top: calc(var(--sticky-h, 100px) + 8px);
+    scroll-margin-top: calc(var(--scroll-offset, 60px) + 8px);
   }
   .group h2 {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
-  .group h2 .key {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 6px;
-    font-size: 13px;
-    color: var(--accent-fg);
-    background: var(--accent);
-    border-radius: var(--radius);
+    gap: 6px 10px;
+    margin-bottom: 12px;
+    font-size: 15px;
   }
   .group h2 .hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-size: 12px;
     font-weight: 400;
     color: var(--text-muted);
@@ -126,21 +135,37 @@
     pointer-events: none;
     overflow-wrap: anywhere;
   }
-  #tooltip .code { opacity: .75; white-space: nowrap; }
+  #tooltip .code { opacity: .75; white-space: nowrap; font-family: var(--font-mono); }
 
+  /* 모바일: 레일을 검색창 아래 가로 스크롤 줄로 바꿔 함께 고정 */
   @media (max-width: 720px) {
     .search .field { max-width: none; }
+    .sc-layout { display: block; }
     .toolbar {
-      flex-wrap: nowrap;
+      top: var(--sticky-h, 60px);
+      z-index: 5;
+      flex-direction: row;
+      gap: 6px;
+      max-height: none;
+      margin: -8px 0 8px;
+      padding: 0 28px 8px 0;
       overflow-x: auto;
-      padding-right: 28px;
+      overflow-y: hidden;
+      background: var(--bg);
       scrollbar-width: none;
       /* 오른쪽 끝을 흐리게 해 가로로 더 넘길 수 있음을 표시 */
       -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
       mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
     }
     .toolbar::-webkit-scrollbar { display: none; }
-    .toolbar a { flex: none; white-space: nowrap; }
+    .toolbar a {
+      flex: none;
+      gap: 6px;
+      white-space: nowrap;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .toolbar a .keycap { font-size: 12px; }
     .group h2 .hint { display: none; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); }
     .cell { font-size: 18px; }
@@ -150,24 +175,30 @@
 <body>
 
 <nav class="tool-nav" aria-label="Toolbox 도구 목록">
-  <a class="brand" href="index.html">Toolbox</a>
+  <a class="brand" href="index.html"><span class="keycap" aria-hidden="true">T</span>Toolbox</a>
   <a href="ip-subnet-calculator.html">서브넷 IP 계산기</a>
   <a href="ip-extractor.html">IP 추출기</a>
   <a href="special-characters.html" aria-current="page">특수문자표</a>
 </nav>
 
+<main>
 <h1>한글 자음 + 한자 특수문자표</h1>
-<p class="desc">Windows 한국어 입력기에서 자음을 입력하고 <kbd>한자</kbd> 키를 누르면 나오는 특수문자 전체 목록입니다. 칸을 클릭하면 복사되고, 키보드에서는 방향키로 칸을 옮겨 다닐 수 있습니다.</p>
+<p class="desc">Windows 한국어 입력기에서 자음을 쓰고 <kbd>한자</kbd> 키를 누르면 나오는 특수문자 전체 목록입니다. 칸을 누르면 복사되고, 키보드로는 방향키로 칸을 옮겨 다닐 수 있습니다.</p>
 
 <div class="sticky" id="sticky">
   <div class="search" role="search">
-    <input type="search" id="search" class="field" placeholder="명칭 · 문자 · 코드(U+2126) 검색" aria-label="특수문자 검색" autocomplete="off" spellcheck="false">
+    <input type="search" id="search" class="field" placeholder="명칭, 문자, 코드(U+2126)로 검색" aria-label="특수문자 검색" autocomplete="off" spellcheck="false">
     <span id="result" class="count" role="status" aria-live="polite"></span>
   </div>
-  <nav class="toolbar" id="toolbar" aria-label="자음 바로가기"></nav>
 </div>
-<div id="groups"></div>
-<p id="empty" hidden>검색 결과가 없습니다.</p>
+<div class="sc-layout">
+  <nav class="toolbar" id="toolbar" aria-label="자음 바로가기"></nav>
+  <div>
+    <div id="groups"></div>
+    <p id="empty" hidden>검색 결과가 없습니다. 한글 명칭(예: 별표), 영문 명칭(star), 코드(U+2605)로도 찾을 수 있습니다.</p>
+  </div>
+</div>
+</main>
 <div id="tooltip" aria-hidden="true" hidden></div>
 
 <script src="assets/toolbox.js"></script>
@@ -205,7 +236,7 @@ const GROUPS = [
     '㎰ ㎱ ㎲ ㎳ ㎴ ㎵ ㎶ ㎷ ㎸ ㎹ ㎀ ㎁ ㎂ ㎃ ㎄ ㎺ ㎻ ㎼ ㎽ ㎾ ㎿ ㎐ ㎑ ㎒ ㎓ ㎔ \u2126 ㏀ ㏁ ㎊ ㎋ ㎌ ' +
     '㏖ ㏅ ㎭ ㎮ ㎯ ㏛ ㎩ ㎪ ㎫ ㎬ ㏝ ㏐ ㏓ ㏃ ㏉ ㏜ ㏆'
   )},
-  { key: 'ㅁ', name: '도형 · 기타 기호', chars: list(
+  { key: 'ㅁ', name: '도형·기타 기호', chars: list(
     '＃ ＆ ＊ ＠ § ※ ☆ ★ ○ ● ◎ ◇ ◆ □ ■ △ ▲ ▽ ▼ → ← ↑ ↓ ↔ 〓 ' +
     '◁ ◀ ▷ ▶ ♤ ♠ ♡ ♥ ♧ ♣ ⊙ ◈ ▣ ◐ ◑ ▒ ▤ ▥ ▨ ▧ ▦ ▩ ♨ ☏ ☎ ☜ ☞ ¶ † ‡ ' +
     '↕ ↗ ↙ ↖ ↘ ♭ ♩ ♪ ♬ ㉿ ㈜ № ㏇ ™ ㏂ ㏘ ℡ ®'
@@ -214,12 +245,12 @@ const GROUPS = [
     '─ │ ┌ ┐ ┘ └ ├ ┬ ┤ ┴ ┼ ━ ┃ ┏ ┓ ┛ ┗ ┣ ┳ ┫ ┻ ╋ ┠ ┯ ┨ ┷ ┿ ┝ ┰ ┥ ┸ ╂ ' +
     '┒ ┑ ┚ ┙ ┖ ┕ ┎ ┍ ┞ ┟ ┡ ┢ ┦ ┧ ┩ ┪ ┭ ┮ ┱ ┲ ┵ ┶ ┹ ┺ ┽ ┾ ╀ ╁ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊'
   )},
-  { key: 'ㅅ', name: '한글 원 · 괄호 문자', chars: range([0x3260, 0x327B], [0x3200, 0x321B]) },
-  { key: 'ㅇ', name: '영문 · 숫자 원 · 괄호 문자', chars: range(
+  { key: 'ㅅ', name: '한글 원·괄호 문자', chars: range([0x3260, 0x327B], [0x3200, 0x321B]) },
+  { key: 'ㅇ', name: '영문·숫자 원·괄호 문자', chars: range(
     [0x24D0, 0x24E9], [0x2460, 0x246E], [0x249C, 0x24B5], [0x2474, 0x2482]
   )},
-  { key: 'ㅈ', name: '숫자 · 로마 숫자', chars: range([0xFF10, 0xFF19], [0x2170, 0x2179], [0x2160, 0x2169]) },
-  { key: 'ㅊ', name: '분수 · 첨자', chars: list('½ ⅓ ⅔ ¼ ¾ ⅛ ⅜ ⅝ ⅞ ¹ ² ³ ⁴ ⁿ ₁ ₂ ₃ ₄') },
+  { key: 'ㅈ', name: '숫자·로마 숫자', chars: range([0xFF10, 0xFF19], [0x2170, 0x2179], [0x2160, 0x2169]) },
+  { key: 'ㅊ', name: '분수·첨자', chars: list('½ ⅓ ⅔ ¼ ¾ ⅛ ⅜ ⅝ ⅞ ¹ ² ³ ⁴ ⁿ ₁ ₂ ₃ ₄') },
   { key: 'ㅋ', name: '현대 한글 자모', chars: range([0x3131, 0x3163]) },
   { key: 'ㅌ', name: '옛 한글 자모', chars: range([0x3165, 0x318E]) },
   { key: 'ㅍ', name: '전각 영문', chars: range([0xFF21, 0xFF3A], [0xFF41, 0xFF5A]) },
@@ -835,7 +866,7 @@ const views = GROUPS.map(group => {
   const link = document.createElement('a');
   link.href = '#' + id;
   link.title = hint;
-  link.innerHTML = '<span class="key"></span>';
+  link.innerHTML = '<span class="keycap" aria-hidden="true"></span>';
   link.firstChild.textContent = group.key;
   link.append(group.name);
   toolbarEl.appendChild(link);
@@ -847,16 +878,19 @@ const views = GROUPS.map(group => {
 
   const h2 = document.createElement('h2');
   h2.id = id + '-title';
-  h2.innerHTML = '<span class="key" aria-hidden="true"></span><span class="name"></span>' +
-    '<span class="hint"></span><span class="count"></span>';
+  // 제목 옆에 실제 입력 방법을 키캡으로 표시: [ㄱ] + [한자]
+  h2.innerHTML = '<span class="name"></span>' +
+    '<span class="hint" aria-hidden="true"><kbd class="key"></kbd>+<kbd>한자</kbd></span><span class="count"></span>';
   h2.querySelector('.key').textContent = group.key;
   h2.querySelector('.name').textContent = group.name;
-  h2.querySelector('.hint').textContent = hint;
   const countEl = h2.querySelector('.count');
   section.appendChild(h2);
 
   const grid = document.createElement('div');
   grid.className = 'grid';
+  // 방향키로 칸을 옮겨 다니는 묶음(roving tabindex)임을 보조 기술에 알림
+  grid.setAttribute('role', 'toolbar');
+  grid.setAttribute('aria-label', group.name);
   const cells = group.chars.map((ch, i) => {
     const cell = document.createElement('button');
     cell.type = 'button';
@@ -920,16 +954,23 @@ searchEl.addEventListener('input', applyFilter);
 
 // ---------- 바로가기 메뉴 ----------
 
-// 메뉴가 여러 줄로 감겨도 섹션 제목이 가려지지 않도록 고정 영역 높이를 반영
+// 화면 위에 고정된 영역의 높이: 검색창 + (모바일에서는) 그 아래 가로 메뉴
+const mobileQuery = window.matchMedia(MOBILE_QUERY);
+let headerHeight = 0;
 function syncStickyHeight() {
-  document.documentElement.style.setProperty('--sticky-h', stickyEl.offsetHeight + 'px');
+  const stickyH = stickyEl.offsetHeight;
+  headerHeight = stickyH + (mobileQuery.matches ? toolbarEl.offsetHeight : 0);
+  const root = document.documentElement.style;
+  root.setProperty('--sticky-h', stickyH + 'px');
+  // 바로가기로 이동했을 때 섹션 제목이 고정 영역에 가려지지 않도록
+  root.setProperty('--scroll-offset', headerHeight + 'px');
 }
 
 // 지금 보고 있는 그룹을 메뉴에 표시
 let activeView = null;
 function updateActiveLink() {
   const shown = views.filter(view => !view.section.hidden);
-  const line = stickyEl.offsetHeight + 12;
+  const line = headerHeight + 12;
   let current = shown[0] || null;
   for (const view of shown) {
     if (view.section.getBoundingClientRect().top > line) break;
@@ -944,10 +985,13 @@ function updateActiveLink() {
   activeView = current;
   if (!current) return;
   current.link.setAttribute('aria-current', 'true');
-  // 메뉴가 가로 스크롤일 때(모바일) 현재 그룹이 보이도록 메뉴만 이동
+  // 메뉴가 넘칠 때(모바일은 가로, 낮은 화면은 세로) 현재 그룹이 보이도록 메뉴만 이동
+  const link = current.link;
   if (toolbarEl.scrollWidth > toolbarEl.clientWidth) {
-    const link = current.link;
     toolbarEl.scrollLeft = link.offsetLeft - (toolbarEl.clientWidth - link.offsetWidth) / 2;
+  }
+  if (toolbarEl.scrollHeight > toolbarEl.clientHeight) {
+    toolbarEl.scrollTop = link.offsetTop - (toolbarEl.clientHeight - link.offsetHeight) / 2;
   }
 }
 
@@ -955,11 +999,13 @@ function onLayoutChange() {
   syncStickyHeight();
   updateActiveLink();
 }
+// 고정 영역 높이가 바뀔 때 + 창 크기가 바뀌어 섹션 위치가 달라질 때 모두 다시 계산
 if ('ResizeObserver' in window) {
-  new ResizeObserver(onLayoutChange).observe(stickyEl);
-} else {
-  window.addEventListener('resize', onLayoutChange);
+  const observer = new ResizeObserver(onLayoutChange);
+  observer.observe(stickyEl);
+  observer.observe(toolbarEl);
 }
+window.addEventListener('resize', onLayoutChange);
 
 let scrollQueued = false;
 window.addEventListener('scroll', () => {
@@ -994,7 +1040,9 @@ function showTooltip(cell) {
   let left = rect.left + rect.width / 2 - tipRect.width / 2;
   left = Math.max(margin, Math.min(left, viewportWidth - tipRect.width - margin));
   let top = rect.top - tipRect.height - margin;
-  if (top < stickyEl.getBoundingClientRect().bottom) top = rect.bottom + margin;
+  const headerBottom = Math.max(stickyEl.getBoundingClientRect().bottom,
+    mobileQuery.matches ? toolbarEl.getBoundingClientRect().bottom : 0);
+  if (top < headerBottom) top = rect.bottom + margin;
   tooltipEl.style.left = left + 'px';
   tooltipEl.style.top = top + 'px';
 }
@@ -1048,8 +1096,9 @@ groupsEl.addEventListener('keydown', (e) => {
     case 'End': next = last; break;
     default: return;
   }
-  e.preventDefault();
+  // 옮겨 갈 칸이 없으면(맨 윗줄에서 ↑ 등) 기본 동작(페이지 스크롤)을 막지 않음
   if (next < 0 || next > last) return;
+  e.preventDefault();
   visible[next].focus();
 });
 
