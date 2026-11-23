@@ -10,17 +10,10 @@
    · 냉복도 파랑(--accent): 링크 · 할당       · 열복도 빨강(--danger): 오류 · 충돌
    대담함은 랙 실장도 한 곳에만 쓰고, 나머지 면은 평평하고 조용하게 둔다.
 */
-/* Gothic A1 의 하이픈은 매우 길어 'sw-ala-01' 이 빼기처럼 읽힌다 — 하이픈 한 글자만 시스템 글꼴로 대체 */
-@font-face {
-  font-family: "Atlas Hyphen";
-  src: local("Arial"), local("Helvetica Neue"), local("Helvetica"), local("Liberation Sans"), local("DejaVu Sans"), local("Malgun Gothic");
-  unicode-range: U+002D;
-}
-
 :root {
   color-scheme: light;
 
-  --font-sans: "Atlas Hyphen", "Gothic A1", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --font-sans: "Pretendard GOV Variable", "Pretendard GOV", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
   --mono: "Martian Mono", "SF Mono", Consolas, Menlo, monospace;
 
   --bg:            #e6e8e3;
