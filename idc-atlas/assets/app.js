@@ -306,7 +306,7 @@
   function rackLocation(rack) {
     const room = L.room(rack.roomId);
     const b = room ? L.building(room.buildingId) : null;
-    return [nm(b), nm(room), rack.row].filter(Boolean).join(' · ');
+    return [nm(b), nm(room), rack.row].filter(Boolean).join(' › ');
   }
 
   /** 장비 뷰 모델 — 표/검색/내보내기에서 공통으로 사용 */
@@ -510,7 +510,7 @@
       const extra = opts.rowActions ? `<td class="actions">${opts.rowActions(row)}</td>` : '';
       const on = sel && sel.set.has(row.id) ? ' picked' : '';
       return `<tr class="${opts.rowClass ? opts.rowClass(row) : ''}${on}">${pick}${cells}${extra}</tr>`;
-    }).join('') : `<tr><td colspan="${span}"><div class="empty"><div class="big">🗂️</div><p>조건에 맞는 항목이 없습니다.</p></div></td></tr>`;
+    }).join('') : `<tr><td colspan="${span}"><div class="empty"><p>조건에 맞는 항목이 없습니다.</p></div></td></tr>`;
 
     return `<div class="table-wrap"><table class="tbl"><thead><tr>${selHead}${head}${opts.rowActions ? '<th class="num">작업</th>' : ''}</tr></thead><tbody>${body}</tbody></table></div>`;
   }
@@ -539,7 +539,7 @@
     domain:      { key: 'domain', label: '도메인', value: (r) => r.domain, html: (r) => nz(r.domain) },
     fqdn:        { key: 'fqdn', label: 'FQDN', cls: 'mono', value: (r) => r.fqdn },
     rack:        { key: 'rack', label: '랙', value: (r) => r.rack,
-                   html: (r) => `<a href="#/physical?racks=${esc(r.rackId)}">${esc(r.rack)}</a><span class="sub">${esc(r.room)}</span>` },
+                   html: (r) => (r.rack ? `<a class="tape sm" href="#/physical?racks=${esc(r.rackId)}" title="랙 실장도에서 보기">${esc(r.rack)}</a><span class="sub">${esc(r.room)}</span>` : nz('')) },
     pos:         { key: 'pos', label: '위치', cls: 'num', value: (r) => r.pos, html: (r) => `${esc(r.posLabel)} <span class="muted">(${r.sizeU}U)</span>` },
     building:    { key: 'building', label: '건물', value: (r) => r.building },
     room:        { key: 'room', label: '전산실', value: (r) => r.room },
@@ -639,7 +639,7 @@
 
     return pageHead('장비', `${rows.length}건 표시 · 전체 ${total}대${out ? ` · 운영 외 ${out}대` : ''}`, `
       <button class="btn mutating" data-action="add-device">＋ 장비 추가</button>
-      <button class="btn" data-action="export-devices">⬇ Excel 내보내기 (CSV)</button>
+      <button class="btn" data-action="export-devices">Excel 내보내기 (CSV)</button>
     `) + `
     <div class="card">
       <div class="toolbar">
@@ -661,10 +661,10 @@
         select: { set: s.selected, attr: 'dev' },
         rowClass: (r) => (r.inService ? '' : 'off'),
         rowActions: (r) => `
-          <a class="rowbtn" href="#/physical?racks=${esc(r.rackId)}&focus=${esc(r.id)}" title="랙에서 보기" aria-label="랙에서 보기">📐</a>
+          <a class="rowbtn" href="#/physical?racks=${esc(r.rackId)}&focus=${esc(r.id)}" title="랙에서 보기" aria-label="랙에서 보기"><svg class="ico" aria-hidden="true"><use href="#i-elev"/></svg></a>
           <button class="rowbtn mutating" data-action="edit-device" data-id="${esc(r.id)}" title="편집" aria-label="편집">✎</button>
           <button class="rowbtn mutating" data-action="copy-device" data-id="${esc(r.id)}" title="복사" aria-label="복사">⧉</button>
-          <button class="rowbtn del mutating" data-action="del-device" data-id="${esc(r.id)}" title="삭제" aria-label="삭제">🗑</button>`
+          <button class="rowbtn del mutating" data-action="del-device" data-id="${esc(r.id)}" title="삭제" aria-label="삭제"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg></button>`
       })}
     </div>`;
   }
@@ -682,7 +682,7 @@
       </span>
       <button class="btn sm mutating" data-action="bulk-monitor" data-on="1">모니터링 켜기</button>
       <button class="btn sm mutating" data-action="bulk-monitor" data-on="0">모니터링 끄기</button>
-      <button class="btn sm" data-action="export-selected">⬇ 선택 항목 CSV</button>
+      <button class="btn sm" data-action="export-selected">선택 항목 CSV</button>
       <button class="btn sm danger mutating" data-action="bulk-delete">선택 삭제</button>
       <button class="btn sm ghost" data-action="bulk-clear">선택 해제</button>
     </div>`;
@@ -753,13 +753,13 @@
     const history = db.changeLog.filter((e) => e.entityId === d.id || (e.refs || []).includes(d.id)).slice(0, 15);
 
     return pageHead(d.name, `${esc(v.customer)} · ${esc(v.role)} · ${esc(v.rack)} ${esc(v.posLabel)}${v.ip ? ' · <span class="mono">' + esc(v.ip) + '</span>' : ''}`, `
-      <a class="btn" href="#/physical?racks=${esc(d.rackId)}&focus=${esc(d.id)}">📐 랙에서 보기</a>
+      <a class="btn" href="#/physical?racks=${esc(d.rackId)}&focus=${esc(d.id)}">랙에서 보기</a>
       <button class="btn mutating" data-action="copy-device" data-id="${esc(d.id)}">⧉ 복사</button>
       <button class="btn mutating" data-action="edit-device" data-id="${esc(d.id)}">✎ 편집</button>
-      <button class="btn danger mutating" data-action="del-device" data-id="${esc(d.id)}">🗑 삭제</button>
+      <button class="btn danger mutating" data-action="del-device" data-id="${esc(d.id)}">삭제</button>
     `, [{ label: '장비', href: '#/devices' }, { label: d.name }]) + `
 
-    ${!d.inService ? `<div class="notice warn">⛔ <div><b>이 장비는 현재 '${esc(v.statusLabel)}' 상태로 서비스 중이 아닙니다.</b>${d.notes ? '<br>' + esc(d.notes) : ''}</div></div>` : ''}
+    ${!d.inService ? `<div class="notice warn"><div><b>이 장비는 현재 '${esc(v.statusLabel)}' 상태로 서비스 중이 아닙니다.</b>${d.notes ? '<br>' + esc(d.notes) : ''}</div></div>` : ''}
 
     <div class="grid c2">
       <div>
@@ -854,7 +854,7 @@
      ====================================================================== */
   const RACK_COLUMNS = [
     { key: 'name', label: '랙', value: (r) => r.rack.name,
-      html: (r) => `<a class="name-link" href="#/rack/${esc(r.rack.id)}">${esc(r.rack.name)}</a>${r.rack.row ? `<span class="sub">${esc(r.rack.row)}</span>` : ''}` },
+      html: (r) => `<a class="tape sm" href="#/rack/${esc(r.rack.id)}">${esc(r.rack.name)}</a>${r.rack.row ? `<span class="sub">${esc(r.rack.row)}</span>` : ''}` },
     { key: 'building', label: '건물', value: (r) => r.building },
     { key: 'room', label: '전산실', value: (r) => r.room },
     { key: 'size', label: '크기', cls: 'num', value: (r) => r.rack.sizeU, html: (r) => r.rack.sizeU + 'U' },
@@ -889,17 +889,17 @@
         <td><input type="checkbox" data-rack-sel="${esc(r.rack.id)}" ${sel.has(r.rack.id) ? 'checked' : ''} aria-label="${esc(r.rack.name)} 선택"></td>
         ${RACK_COLUMNS.map((c) => `<td class="${c.cls || ''}">${c.html ? c.html(r) : esc(c.value(r))}</td>`).join('')}
         <td class="actions">
-          <a class="rowbtn" href="#/physical?racks=${esc(r.rack.id)}" title="실장도" aria-label="실장도">📐</a>
+          <a class="rowbtn" href="#/physical?racks=${esc(r.rack.id)}" title="실장도" aria-label="실장도"><svg class="ico" aria-hidden="true"><use href="#i-elev"/></svg></a>
           <button class="rowbtn mutating" data-action="edit-rack" data-id="${esc(r.rack.id)}" title="편집" aria-label="편집">✎</button>
           <button class="rowbtn mutating" data-action="copy-rack" data-id="${esc(r.rack.id)}" title="복사" aria-label="복사">⧉</button>
-          <button class="rowbtn del mutating" data-action="del-rack" data-id="${esc(r.rack.id)}" title="삭제" aria-label="삭제">🗑</button>
+          <button class="rowbtn del mutating" data-action="del-rack" data-id="${esc(r.rack.id)}" title="삭제" aria-label="삭제"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg></button>
         </td>
       </tr>`).join('');
 
     return pageHead('랙', `${db.racks.length}개 랙 · 전체 ${totalU}U 중 ${usedU}U 사용 (여유 ${totalU - usedU}U)`, `
-      <button class="btn ${sel.size ? 'primary' : ''}" data-action="view-selected">📐 선택한 랙 실장도 (${sel.size})</button>
+      <button class="btn ${sel.size ? 'primary' : ''}" data-action="view-selected">선택한 랙 실장도 (${sel.size})</button>
       <button class="btn mutating" data-action="add-rack">＋ 랙 추가</button>
-      <button class="btn" data-action="export-racks">⬇ Excel 내보내기 (CSV)</button>
+      <button class="btn" data-action="export-racks">Excel 내보내기 (CSV)</button>
     `) + `
     <div class="card">
       <div class="toolbar">
@@ -923,9 +923,9 @@
     const cols = ['name', 'pos', 'hardware', 'os', 'customer', 'role', 'status'].map((k) => DEVICE_COLUMNS[k]);
 
     return pageHead(rk.name, rackLocation(rk), `
-      <a class="btn" href="#/physical?racks=${esc(rk.id)}">📐 실장도</a>
+      <a class="btn" href="#/physical?racks=${esc(rk.id)}">실장도</a>
       <button class="btn mutating" data-action="edit-rack" data-id="${esc(rk.id)}">✎ 편집</button>
-      <button class="btn danger mutating" data-action="del-rack" data-id="${esc(rk.id)}">🗑 삭제</button>
+      <button class="btn danger mutating" data-action="del-rack" data-id="${esc(rk.id)}">삭제</button>
     `, [{ label: '랙', href: '#/racks' }, { label: rk.name }]) + `
 
     <div class="grid c4" style="margin-bottom:16px">
@@ -966,51 +966,47 @@
       if (top) {
         const size = deviceSize(top);
         const v = dv(top);
-        slots += `<a class="unit ${unitClass(top)} ${top.inService ? '' : 'off'} ${size > 1 ? 'tall' : ''}"
-                     href="#/device/${esc(top.id)}"
-                     style="grid-row: span ${size}; ${focusId === top.id ? 'box-shadow:0 0 0 2px var(--accent)' : ''}"
-                     title="${esc(v.name)} · ${esc(v.statusLabel)} · ${esc(v.hardware)} · ${esc(v.customer)} · ${esc(v.posLabel)}${v.ip ? ' · ' + esc(v.ip) : ''}">
+        const cls = ['unit', unitClass(top), top.inService ? '' : 'off', size > 1 ? 'tall' : '', focusId === top.id ? 'focus' : ''].filter(Boolean).join(' ');
+        slots += `<a class="${cls}" href="#/device/${esc(top.id)}" style="grid-row: span ${size}"
+                     title="${esc(v.name)} (${esc(v.statusLabel)}), ${esc(v.hardware)}, ${esc(v.customer)}, ${esc(v.posLabel)}${v.ip ? ', ' + esc(v.ip) : ''}">
                     <span class="u-name">${esc(top.name)}</span>
-                    <span class="u-meta">${esc(v.hardware)} · ${size}U</span>
+                    <span class="u-meta">${esc(v.hardware)}</span>
+                    <span class="led ${esc(DEVICE_STATUS[top.status] ? DEVICE_STATUS[top.status].cls : 'ok')}" role="img" aria-label="${esc(v.statusLabel)}"></span>
                   </a>`;
       } else if (!covered[u]) {
-        slots += `<div class="slot" data-add-at="${esc(rk.id)}:${u}" title="U${u}에 장비 추가"></div>`;
+        slots += `<div class="slot" data-add-at="${esc(rk.id)}:${u}" title="U${u}에 장비 추가" data-u="U${u}"></div>`;
       }
     }
 
     return `<div class="rack">
       <div class="rack-head">
-        <h3><a href="#/rack/${esc(rk.id)}">${esc(rk.name)}</a></h3>
-        <span class="loc">${esc(rackLocation(rk))}</span>
+        <a class="tape" href="#/rack/${esc(rk.id)}">${esc(rk.name)}</a>
         <span class="tools">
-          <button class="rowbtn mutating" data-action="edit-rack" data-id="${esc(rk.id)}" title="랙 편집" aria-label="랙 편집">✎</button>
+          <button class="rowbtn mutating" data-action="edit-rack" data-id="${esc(rk.id)}" title="랙 편집" aria-label="${esc(rk.name)} 랙 편집">✎</button>
         </span>
+        <span class="loc">${esc(rackLocation(rk))}</span>
       </div>
       <div class="rack-body">
-        <div class="rack-ruler">${ruler}</div>
+        <div class="rack-ruler" aria-hidden="true">${ruler}</div>
         <div class="rack-slots">${slots}</div>
+        <div class="rack-rail" aria-hidden="true"></div>
       </div>
-      <div class="rack-foot">
-        <span class="mono">${st.used}/${rk.sizeU}U</span>
-        ${meterBar(st.pct)}
-        <span class="mono">여유 ${st.free}U</span>
-      </div>
-      ${st.capW ? `<div class="rack-foot power" title="전력 ${st.watts}W / ${st.capW}W">
-        <span class="mono">⚡ ${(st.watts / 1000).toFixed(1)}kW</span>
-        ${meterBar(st.powerPct)}
-        <span class="mono">${st.powerPct}%</span>
-      </div>` : ''}
+      <dl class="rack-foot">
+        <dt>공간</dt><dd>${meterBar(st.pct)}</dd><dd class="mono">${st.used}/${rk.sizeU}U</dd>
+        ${st.capW ? `<dt>전력</dt><dd>${meterBar(st.powerPct)}</dd><dd class="mono">${(st.watts / 1000).toFixed(1)}/${(st.capW / 1000).toFixed(0)}kW</dd>` : ''}
+      </dl>
     </div>`;
   }
 
   function rackLegend() {
     return `<div class="legend">
-      <span><b style="background:var(--accent-soft);border-color:var(--accent-line)"></b> 서버</span>
-      <span><b style="background:var(--info-soft)"></b> 네트워크</span>
-      <span><b style="background:var(--ok-soft)"></b> 스토리지</span>
-      <span><b style="background:var(--warn-soft)"></b> 전원</span>
-      <span><b style="background:var(--danger-soft)"></b> 운영 외 (점검·RMA·재고 등)</span>
-      <span>빈 슬롯을 클릭하면 해당 U에 장비를 추가합니다</span>
+      <span><b class="sw"></b> 서버</span>
+      <span><b class="sw net"></b> 네트워크</span>
+      <span><b class="sw stor"></b> 스토리지</span>
+      <span><b class="sw power"></b> 전원</span>
+      <span><b class="sw off"></b> 운영 외</span>
+      <span class="leds"><i class="led ok"></i> 운영 <i class="led info"></i> 구축 중 <i class="led warn"></i> 점검 중 <i class="led danger"></i> RMA <i class="led mute"></i> 폐기 예정, 재고</span>
+      <span class="muted">빈 칸을 누르면 그 U에 장비를 추가합니다</span>
     </div>`;
   }
 
@@ -1022,14 +1018,14 @@
 
     return pageHead('랙 실장도', `${list.length}개 랙 · 나란히 비교 · 인쇄에 최적화된 화면입니다`, `
       <a class="btn" href="#/racks">랙 목록에서 선택</a>
-      <button class="btn" id="print-inline">🖨 인쇄</button>
+      <button class="btn" id="print-inline">인쇄</button>
     `) + `
     <div class="card">
       <div class="card-head">
         <h2>${list.map((rk) => esc(rk.name)).join(' · ') || '표시할 랙 없음'}</h2>
         <span class="right hint">장비를 클릭하면 상세 화면으로 이동합니다</span>
       </div>
-      ${list.length ? `<div class="rack-scroll">${list.map((rk) => rackElevation(rk, focus)).join('')}</div>` : '<div class="empty"><div class="big">📐</div><p>표시할 랙이 없습니다.</p></div>'}
+      ${list.length ? `<div class="rack-scroll">${list.map((rk) => rackElevation(rk, focus)).join('')}</div>` : '<div class="empty"><p>표시할 랙이 없습니다.</p></div>'}
       ${rackLegend()}
     </div>`;
   }
@@ -1054,12 +1050,12 @@
       ${APP_COLUMNS.map((c) => `<td class="${c.cls || ''}">${c.html ? c.html(a) : esc(c.value(a))}</td>`).join('')}
       <td class="actions">
         <button class="rowbtn mutating" data-action="edit-app" data-id="${esc(a.id)}" title="편집" aria-label="편집">✎</button>
-        <button class="rowbtn del mutating" data-action="del-app" data-id="${esc(a.id)}" title="삭제" aria-label="삭제">🗑</button>
+        <button class="rowbtn del mutating" data-action="del-app" data-id="${esc(a.id)}" title="삭제" aria-label="삭제"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg></button>
       </td></tr>`).join('');
 
     return pageHead('앱', `${db.apps.length}개 앱 · 장비에 연결된 서비스/애플리케이션`, `
       <button class="btn mutating" data-action="add-app">＋ 앱 추가</button>
-      <button class="btn" data-action="export-apps">⬇ Excel 내보내기 (CSV)</button>
+      <button class="btn" data-action="export-apps">Excel 내보내기 (CSV)</button>
     `) + `
     <div class="card">
       <div class="table-wrap"><table class="tbl">
@@ -1078,12 +1074,12 @@
     return pageHead(a.name, a.notes || '연결된 장비 목록', `
       <button class="btn mutating" data-action="link-device" data-app="${esc(a.id)}">＋ 장비 연결</button>
       <button class="btn mutating" data-action="edit-app" data-id="${esc(a.id)}">✎ 편집</button>
-      <button class="btn danger mutating" data-action="del-app" data-id="${esc(a.id)}">🗑 삭제</button>
+      <button class="btn danger mutating" data-action="del-app" data-id="${esc(a.id)}">삭제</button>
     `, [{ label: '앱', href: '#/apps' }, { label: a.name }]) + `
     <div class="card">
       <div class="card-head"><h2>연결된 장비 (${devs.length})</h2></div>
       ${devs.length ? sortableTable(cols, devs, { key: 'name', dir: 1 }, 'noop', { rowClass: (x) => (x.inService ? '' : 'off') })
-        : '<div class="empty"><div class="big">🧩</div><p>연결된 장비가 없습니다.</p></div>'}
+        : '<div class="empty"><p>연결된 장비가 없습니다.</p></div>'}
     </div>`;
   }
 
@@ -1211,7 +1207,7 @@
       const rows = applySort(filteredSubnetRows(), f.sort, SUBNET_COLUMNS);
       actions = `<button class="btn primary mutating" data-action="add-subnet">＋ 서브넷 추가</button>
                  <button class="btn mutating" data-action="add-ip">＋ IP 할당</button>
-                 <button class="btn" data-action="export-subnets">⬇ CSV</button>`;
+                 <button class="btn" data-action="export-subnets">CSV</button>`;
       body = `<div class="toolbar">
           <input class="inp" type="search" data-state="ipam.q" value="${esc(f.q)}" placeholder="CIDR · 이름 · VLAN · 주소로 검색 (예: 10.11.0.25)" style="min-width:260px">
           <div class="field"><label>위치</label>${stateSelect('ipam.building', db.buildings, f.building, '전체')}</div>
@@ -1223,13 +1219,13 @@
           rowActions: (x) => `
             <button class="rowbtn mutating" data-action="add-ip" data-subnet="${esc(x.s.id)}" title="다음 빈 IP 할당" aria-label="다음 빈 IP 할당">＋</button>
             <button class="rowbtn mutating" data-action="edit-subnet" data-id="${esc(x.s.id)}" title="편집" aria-label="편집">✎</button>
-            <button class="rowbtn del mutating" data-action="del-subnet" data-id="${esc(x.s.id)}" title="삭제" aria-label="삭제">🗑</button>`
+            <button class="rowbtn del mutating" data-action="del-subnet" data-id="${esc(x.s.id)}" title="삭제" aria-label="삭제"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg></button>`
         })}`;
     } else if (tab === 'ips') {
       const f = state.ips;
       const rows = applySort(filteredIpRows(), f.sort, IP_COLUMNS);
       actions = `<button class="btn primary mutating" data-action="add-ip">＋ IP 할당</button>
-                 <button class="btn" data-action="export-ips">⬇ CSV</button>`;
+                 <button class="btn" data-action="export-ips">CSV</button>`;
       body = `<div class="toolbar">
           <input class="inp" type="search" data-state="ips.q" value="${esc(f.q)}" placeholder="주소 · 장비 · 인터페이스 · 비고" style="min-width:220px">
           <div class="field"><label>상태</label>${stateSelect('ips.status', mapOptions(IP_STATUS, (x) => x.label), f.status, '전체')}</div>
@@ -1242,7 +1238,7 @@
           rowClass: (x) => (x.conflict ? 'conflict' : ''),
           rowActions: (x) => `
             <button class="rowbtn mutating" data-action="edit-ip" data-id="${esc(x.id)}" title="편집" aria-label="편집">✎</button>
-            <button class="rowbtn del mutating" data-action="del-ip" data-id="${esc(x.id)}" title="삭제" aria-label="삭제">🗑</button>`
+            <button class="rowbtn del mutating" data-action="del-ip" data-id="${esc(x.id)}" title="삭제" aria-label="삭제"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg></button>`
         })}`;
     } else {
       const rows = applySort(db.vlans, state.vlans.sort, VLAN_COLUMNS);
@@ -1250,7 +1246,7 @@
       body = sortableTable(VLAN_COLUMNS, rows, state.vlans.sort, 'vlans', {
         rowActions: (v) => `
           <button class="rowbtn mutating" data-action="edit-vlan" data-id="${esc(v.id)}" title="편집" aria-label="편집">✎</button>
-          <button class="rowbtn del mutating" data-action="del-vlan" data-id="${esc(v.id)}" title="삭제" aria-label="삭제">🗑</button>`
+          <button class="rowbtn del mutating" data-action="del-vlan" data-id="${esc(v.id)}" title="삭제" aria-label="삭제"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg></button>`
       });
     }
 
@@ -1320,7 +1316,7 @@
     return pageHead(sn.cidr, `${esc(sn.name)}${vl ? ' · ' + esc(vlanLabel(vl)) : ''} · ${esc(nm(L.building(sn.buildingId)))}`, `
       <button class="btn primary mutating" data-action="add-ip" data-subnet="${esc(sn.id)}" ${next ? '' : 'disabled'}>＋ 다음 빈 IP 할당${next ? ` <span class="mono" style="opacity:.8">${esc(next)}</span>` : ''}</button>
       <button class="btn mutating" data-action="edit-subnet" data-id="${esc(sn.id)}">✎ 편집</button>
-      <button class="btn danger mutating" data-action="del-subnet" data-id="${esc(sn.id)}">🗑 삭제</button>
+      <button class="btn danger mutating" data-action="del-subnet" data-id="${esc(sn.id)}">삭제</button>
     `, [{ label: 'IP 관리', href: '#/ipam' }, { label: sn.cidr }]) + `
 
     <div class="grid c4" style="margin-bottom:16px">
@@ -1357,7 +1353,7 @@
         rowClass: (x) => (x.conflict ? 'conflict' : '') + (x.address === r.query.hl ? ' picked' : ''),
         rowActions: (x) => `
           <button class="rowbtn mutating" data-action="edit-ip" data-id="${esc(x.id)}" title="편집" aria-label="편집">✎</button>
-          <button class="rowbtn del mutating" data-action="del-ip" data-id="${esc(x.id)}" title="삭제" aria-label="삭제">🗑</button>`
+          <button class="rowbtn del mutating" data-action="del-ip" data-id="${esc(x.id)}" title="삭제" aria-label="삭제"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg></button>`
       })}
     </div>`;
   }
@@ -1370,43 +1366,43 @@
     const out = [];
     const devs = db.devices;
     const conflicts = ipConflicts();
-    if (conflicts.length) out.push({ level: 'danger', icon: '🌐', title: `IP 주소 충돌 ${conflicts.length}건`,
+    if (conflicts.length) out.push({ level: 'danger', title: `IP 주소 충돌 ${conflicts.length}건`,
       detail: conflicts.map(([a]) => a).join(', '), href: '#/ipam/ips?conflict=1' });
 
     const orphan = db.ipAddresses.filter((i) => { const sn = L.subnet(i.subnetId); const net = sn && subnetNet(sn); return !net || !IP.contains(net, IP.toInt(i.address)); });
-    if (orphan.length) out.push({ level: 'danger', icon: '🧭', title: `서브넷 범위 밖 IP ${orphan.length}건`,
+    if (orphan.length) out.push({ level: 'danger', title: `서브넷 범위 밖 IP ${orphan.length}건`,
       detail: orphan.slice(0, 5).map((i) => i.address).join(', '), href: '#/ipam/ips' });
 
     db.racks.forEach((rk) => {
       const st = rackStats(rk);
-      if (st.capW && st.powerPct >= 90) out.push({ level: st.powerPct >= 100 ? 'danger' : 'warn', icon: '⚡', title: `${rk.name} 전력 ${st.powerPct}%`,
+      if (st.capW && st.powerPct >= 90) out.push({ level: st.powerPct >= 100 ? 'danger' : 'warn', title: `${rk.name} 전력 ${st.powerPct}%`,
         detail: `${(st.watts / 1000).toFixed(1)}kW / 계약 ${rk.powerKw}kW — 증설 시 전력 재배치 필요`, href: '#/rack/' + rk.id });
-      if (st.pct >= 90) out.push({ level: 'warn', icon: '🗄️', title: `${rk.name} 공간 ${st.pct}% 사용`, detail: `여유 ${st.free}U`, href: '#/rack/' + rk.id });
+      if (st.pct >= 90) out.push({ level: 'warn', title: `${rk.name} 공간 ${st.pct}% 사용`, detail: `여유 ${st.free}U`, href: '#/rack/' + rk.id });
     });
 
     db.subnets.forEach((sn) => {
       const st = subnetStats(sn);
-      if (st.pct >= 80) out.push({ level: st.pct >= 90 ? 'danger' : 'warn', icon: '📶', title: `${sn.cidr} 사용률 ${st.pct}%`,
+      if (st.pct >= 80) out.push({ level: st.pct >= 90 ? 'danger' : 'warn', title: `${sn.cidr} 사용률 ${st.pct}%`,
         detail: `${sn.name} · 여유 ${st.free}개`, href: '#/subnet/' + sn.id });
     });
 
     const expired = devs.filter((d) => d.warrantyEnd && daysUntil(d.warrantyEnd) < 0);
     const expiring = devs.filter((d) => d.warrantyEnd && daysUntil(d.warrantyEnd) >= 0 && daysUntil(d.warrantyEnd) <= 90);
-    if (expired.length) out.push({ level: 'warn', icon: '🛡️', title: `보증 만료 장비 ${expired.length}대`, detail: expired.slice(0, 6).map((d) => d.name).join(', ') + (expired.length > 6 ? ' 외' : ''), href: '#/reports' });
-    if (expiring.length) out.push({ level: 'info', icon: '🛡️', title: `90일 내 보증 만료 ${expiring.length}대`, detail: expiring.map((d) => d.name).join(', '), href: '#/reports' });
+    if (expired.length) out.push({ level: 'warn', title: `보증 만료 장비 ${expired.length}대`, detail: expired.slice(0, 6).map((d) => d.name).join(', ') + (expired.length > 6 ? ' 외' : ''), href: '#/reports' });
+    if (expiring.length) out.push({ level: 'info', title: `90일 내 보증 만료 ${expiring.length}대`, detail: expiring.map((d) => d.name).join(', '), href: '#/reports' });
 
     const noIpmi = devs.filter((d) => d.status !== 'stock' && isServerLike(d) && !ipmiIp(d.id));
-    if (noIpmi.length) out.push({ level: 'info', icon: '🔌', title: `IPMI/BMC 미등록 서버 ${noIpmi.length}대`, detail: noIpmi.map((d) => d.name).join(', '), href: '#/reports' });
+    if (noIpmi.length) out.push({ level: 'info', title: `IPMI/BMC 미등록 서버 ${noIpmi.length}대`, detail: noIpmi.map((d) => d.name).join(', '), href: '#/reports' });
 
     const noIp = devs.filter((d) => d.status === 'active' && !deviceIps(d.id).some((i) => i.type !== 'ipmi'));
-    if (noIp.length) out.push({ level: 'info', icon: '❔', title: `서비스/관리 IP 없는 운영 장비 ${noIp.length}대`, detail: noIp.map((d) => d.name).join(', '), href: '#/devices' });
+    if (noIp.length) out.push({ level: 'info', title: `서비스/관리 IP 없는 운영 장비 ${noIp.length}대`, detail: noIp.map((d) => d.name).join(', '), href: '#/devices' });
 
     const outOfService = devs.filter((d) => !d.inService && d.status !== 'stock');
-    if (outOfService.length) out.push({ level: 'info', icon: '🛠️', title: `운영 외 장비 ${outOfService.length}대`,
+    if (outOfService.length) out.push({ level: 'info', title: `운영 외 장비 ${outOfService.length}대`,
       detail: outOfService.map((d) => d.name + '(' + statusLabel(d.status) + ')').join(', '), href: '#/devices' });
 
     const dupSerial = dupGroups(devs, (d) => d.serial).length + dupGroups(devs, (d) => d.assetNo).length;
-    if (dupSerial) out.push({ level: 'warn', icon: '🏷️', title: `중복 시리얼/자산번호 ${dupSerial}건`, detail: '실사 및 데이터 정정 필요', href: '#/reports' });
+    if (dupSerial) out.push({ level: 'warn', title: `중복 시리얼/자산번호 ${dupSerial}건`, detail: '실사 및 데이터 정정 필요', href: '#/reports' });
 
     const order = { danger: 0, warn: 1, info: 2, ok: 3 };
     return out.sort((a, b) => order[a.level] - order[b.level]);
@@ -1431,28 +1427,27 @@
     const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 
     return pageHead('대시보드', 'IDC 랙 · IP · 장비 자원을 한 화면에서 점검합니다', `
-      <a class="btn" href="#/ipam">🌐 IP 관리</a>
-      <button class="btn mutating" data-action="add-device">＋ 장비 추가</button>
+      <a class="btn" href="#/ipam">IP 관리</a>
+      <button class="btn primary mutating" data-action="add-device">＋ 장비 추가</button>
     `) + `
-    <div class="grid c4" style="margin-bottom:16px">
-      <a class="stat link" href="#/devices"><div class="label">장비</div><div class="value">${devs.length}<small>대</small></div>
-        <div class="meta">운영 ${active}대 · 운영 외 ${devs.length - active}대</div></a>
-      <a class="stat link" href="#/racks"><div class="label">랙 공간</div><div class="value">${pct(usedU, totalU)}<small>%</small></div>
-        <div class="meta">${db.racks.length}개 랙 · 여유 ${totalU - usedU}U</div>${meterBar(pct(usedU, totalU))}</a>
-      <a class="stat link" href="#/racks"><div class="label">전력</div><div class="value">${(watts / 1000).toFixed(1)}<small>kW</small></div>
-        <div class="meta">계약 ${(capW / 1000).toFixed(0)}kW 대비 ${pct(watts, capW)}%</div>${meterBar(pct(watts, capW))}</a>
-      <a class="stat link" href="#/ipam"><div class="label">IP 주소</div><div class="value">${ipUsed}<small>/ ${ipTotal.toLocaleString()}</small></div>
-        <div class="meta">서브넷 ${db.subnets.length}개 · VLAN ${db.vlans.length}개 · 사용률 ${pct(ipUsed, ipTotal)}%</div>${meterBar(pct(ipUsed, ipTotal))}</a>
+    <div class="kpis">
+      <a class="kpi" href="#/devices"><span class="label">장비</span><span class="value">${devs.length}<small>대</small></span>
+        <span class="meta">운영 ${active}대, 운영 외 ${devs.length - active}대</span></a>
+      <a class="kpi" href="#/racks"><span class="label">랙 공간</span><span class="value">${pct(usedU, totalU)}<small>%</small></span>
+        <span class="meta">랙 ${db.racks.length}개, 여유 ${totalU - usedU}U</span>${meterBar(pct(usedU, totalU))}</a>
+      <a class="kpi" href="#/racks"><span class="label">전력</span><span class="value">${(watts / 1000).toFixed(1)}<small>kW</small></span>
+        <span class="meta">계약 ${(capW / 1000).toFixed(0)}kW의 ${pct(watts, capW)}%</span>${meterBar(pct(watts, capW))}</a>
+      <a class="kpi" href="#/ipam"><span class="label">IP 주소</span><span class="value">${ipUsed}<small>/ ${ipTotal.toLocaleString()}</small></span>
+        <span class="meta">서브넷 ${db.subnets.length}개, VLAN ${db.vlans.length}개</span>${meterBar(pct(ipUsed, ipTotal))}</a>
     </div>
 
     <div class="card">
       <div class="card-head"><h2>점검이 필요한 항목</h2>
         <span class="right">${alerts.length ? `<span class="badge ${alerts.some((a) => a.level === 'danger') ? 'danger' : 'warn'}">${alerts.length}건</span>` : '<span class="badge ok">이상 없음</span>'}</span></div>
       ${alerts.length ? `<ul class="alerts">${alerts.map((a) => `<li class="lv-${a.level}">
-          <span class="ic" aria-hidden="true">${a.icon}</span>
-          <div class="tx"><b>${esc(a.title)}</b><span>${esc(a.detail)}</span></div>
-          <a class="btn sm" href="${a.href}">확인</a></li>`).join('')}</ul>`
-        : '<div class="empty"><div class="big">✅</div><p>모든 지표가 정상 범위입니다.</p></div>'}
+          <span class="led ${a.level}" role="img" aria-label="${a.level === 'danger' ? '긴급' : a.level === 'warn' ? '주의' : '참고'}"></span>
+          <a class="tx" href="${a.href}"><b>${esc(a.title)}</b><span>${esc(a.detail)}</span></a></li>`).join('')}</ul>`
+        : '<div class="empty"><p>점검할 항목이 없습니다. 모든 지표가 정상 범위입니다.</p></div>'}
     </div>
 
     <div class="grid c2" style="margin-top:16px">
@@ -1461,7 +1456,7 @@
         <div class="table-wrap"><table class="tbl">
           <thead><tr><th>랙</th><th>공간</th><th>전력</th></tr></thead>
           <tbody>${rackSt.map(({ rk, st }) => `<tr>
-            <td><a class="name-link" href="#/rack/${esc(rk.id)}">${esc(rk.name)}</a><span class="sub">${esc(rackLocation(rk))}</span></td>
+            <td><a class="tape sm" href="#/rack/${esc(rk.id)}">${esc(rk.name)}</a><span class="sub">${esc(rackLocation(rk))}</span></td>
             <td><div style="display:flex;align-items:center;gap:8px;min-width:120px">${meterBar(st.pct)}<span class="mono" style="font-size:11px">${st.used}/${rk.sizeU}U</span></div></td>
             <td>${powerCell(st)}</td></tr>`).join('')}</tbody>
         </table></div>
@@ -1507,7 +1502,7 @@
     const all = filteredActivity();
     const rows = all.slice(0, f.limit);
     return pageHead('활동 로그', `추가 · 수정 · 삭제 이력 ${db.changeLog.length}건 (최근 1,000건 보관)`, `
-      <button class="btn" data-action="export-activity">⬇ CSV</button>`) + `
+      <button class="btn" data-action="export-activity">CSV</button>`) + `
     <div class="card">
       <div class="toolbar">
         <input class="inp" type="search" data-state="activity.q" value="${esc(f.q)}" placeholder="내용 · 사용자 검색" style="min-width:220px">
@@ -1602,8 +1597,8 @@
     const rackRowsData = rackRows().sort((a, b) => b.st.free - a.st.free);
 
     return pageHead('리포트', '랙 · IP · 장비 현황을 한눈에 정리한 통계 화면입니다', `
-      <button class="btn" id="print-inline">🖨 인쇄</button>
-      <button class="btn" data-action="export-report">⬇ 요약 내보내기 (CSV)</button>
+      <button class="btn" id="print-inline">인쇄</button>
+      <button class="btn" data-action="export-report">요약 내보내기 (CSV)</button>
     `) + `
 
     <div class="grid c4" style="margin-bottom:16px">
@@ -1815,7 +1810,7 @@
           ${sec.cols.map((c) => `<td class="${c.cls || ''}">${nz(c.v(x))}</td>`).join('')}
           <td class="actions">
             <button class="rowbtn mutating" data-action="cfg-edit" data-sec="${esc(key)}" data-id="${esc(x.id)}" title="편집" aria-label="편집">✎</button>
-            <button class="rowbtn del mutating" data-action="cfg-del" data-sec="${esc(key)}" data-id="${esc(x.id)}" title="삭제" aria-label="삭제">🗑</button>
+            <button class="rowbtn del mutating" data-action="cfg-del" data-sec="${esc(key)}" data-id="${esc(x.id)}" title="삭제" aria-label="삭제"><svg class="ico" aria-hidden="true"><use href="#i-trash"/></svg></button>
           </td></tr>`).join('')}</tbody>
       </table></div>
     </div>`;
@@ -1847,8 +1842,8 @@
           ${store.error ? `<dt>오류</dt><dd style="color:var(--danger)">${esc(store.error)}</dd>` : ''}
         </dl>
         <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border)">
-          <button class="btn sm" data-action="backup-json">⬇ JSON 백업</button>
-          <button class="btn sm mutating" data-action="import-json">⬆ JSON 복원</button>
+          <button class="btn sm" data-action="backup-json">JSON 백업</button>
+          <button class="btn sm mutating" data-action="import-json">JSON 복원</button>
           <button class="btn sm danger mutating" data-action="reset-data">초기 데이터로 재설정</button>
           <input type="file" id="import-file" accept="application/json,.json" hidden>
         </div>
@@ -1888,7 +1883,7 @@
   function renderSearch(r) {
     const q = (r.query.q || '').trim();
     const lq = q.toLowerCase();
-    if (!q) return pageHead('검색', '검색어를 입력하세요') + '<div class="card"><div class="empty"><div class="big">🔎</div><p>장비명 · 시리얼 · 자산번호 · IP 주소 · 서브넷으로 부분 검색이 가능합니다.</p></div></div>';
+    if (!q) return pageHead('검색', '검색어를 입력하세요') + '<div class="card"><div class="empty"><p>장비명 · 시리얼 · 자산번호 · IP 주소 · 서브넷으로 부분 검색이 가능합니다.</p></div></div>';
 
     const devs = db.devices.map(dv).filter((v) =>
       v.name.toLowerCase().includes(lq) || v.fqdn.toLowerCase().includes(lq) ||
@@ -1905,10 +1900,10 @@
       const sn = subnetFor(q);
       const net = sn && subnetNet(sn);
       hint = sn
-        ? `<div class="notice">🌐 <div><b class="mono">${esc(q)}</b>는 <a href="#/subnet/${esc(sn.id)}?hl=${encodeURIComponent(q)}">${esc(subnetLabel(sn))}</a>에 속한
+        ? `<div class="notice"><div><b class="mono">${esc(q)}</b>는 <a href="#/subnet/${esc(sn.id)}?hl=${encodeURIComponent(q)}">${esc(subnetLabel(sn))}</a>에 속한
             ${IP.isReserved(net, IP.toInt(q)) ? '<b>네트워크/브로드캐스트 주소</b>입니다.' : '<b>미사용 주소</b>입니다.'}
             ${IP.isReserved(net, IP.toInt(q)) ? '' : `<button class="btn sm mutating" style="margin-left:6px" data-action="add-ip" data-subnet="${esc(sn.id)}" data-address="${esc(q)}">이 주소 할당</button>`}</div></div>`
-        : `<div class="notice warn">🌐 <div><b class="mono">${esc(q)}</b>는 등록된 어떤 서브넷에도 속하지 않습니다.</div></div>`;
+        : `<div class="notice warn"><div><b class="mono">${esc(q)}</b>는 등록된 어떤 서브넷에도 속하지 않습니다.</div></div>`;
     }
 
     return pageHead('검색 결과', `"${esc(q)}" · 장비 ${devs.length} · IP ${ips.length} · 서브넷 ${sns.length} · 랙 ${rks.length} · 앱 ${aps.length}`) + hint + `
@@ -1928,7 +1923,7 @@
   }
 
   function notFound(what) {
-    return `<div class="card"><div class="empty"><div class="big">🚫</div><p>요청한 ${esc(what)}을(를) 찾을 수 없습니다.</p>
+    return `<div class="card"><div class="empty"><p>요청한 ${esc(what)}을(를) 찾을 수 없습니다.</p>
       <p><a href="#/dashboard">대시보드로</a></p></div></div>`;
   }
 
@@ -2630,7 +2625,7 @@
       const id = rsel.dataset.rackSel;
       if (rsel.checked) state.racks.selected.add(id); else state.racks.selected.delete(id);
       const btn = $('[data-action="view-selected"]');
-      if (btn) { btn.textContent = `📐 선택한 랙 실장도 (${state.racks.selected.size})`; btn.classList.toggle('primary', state.racks.selected.size > 0); }
+      if (btn) { btn.textContent = `선택한 랙 실장도 (${state.racks.selected.size})`; btn.classList.toggle('primary', state.racks.selected.size > 0); }
       return;
     }
 
