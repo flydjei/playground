@@ -1,7 +1,7 @@
 /* ==========================================================================
    IDC Atlas prototype — design tokens
    이 앱은 다른 폴더의 파일에 의존하지 않는다. 색 · 글꼴 · 모서리 값은 모두 여기서 정의한다.
-   테마는 app.js 가 <html data-theme="light|dark"> 로 항상 명시한다 (저장값 → 시스템 설정 순).
+   테마는 index.html 의 인라인 스크립트가 첫 페인트 전에 <html data-theme="light|dark"> 로 정한다 (저장값 → 시스템 설정 순).
    ========================================================================== */
 :root {
   color-scheme: light;
@@ -128,6 +128,12 @@ input, select, textarea, button { font: inherit; color: inherit; }
 .skip-link:focus { left: 0; }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 쪽 제목은 화면 전환 시 스크립트로 포커스를 받지만 포커스 링은 필요 없다 */
+.page-head h1:focus { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
 
 /* ==========================================================================
    Shell layout
@@ -364,7 +370,10 @@ input, select, textarea, button { font: inherit; color: inherit; }
    Tables
    ========================================================================== */
 .table-wrap { overflow-x: auto; }
-table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+/* keep-all: 한글 낱말이 글자 단위로 쪼개지지 않게. 링크(장비 · 랙 이름 등)는 한 줄 유지 —
+   표가 좁으면 줄이 쪼개지는 대신 .table-wrap 이 가로로 스크롤된다 */
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; word-break: keep-all; }
+table.tbl td > a:first-child { white-space: nowrap; }
 table.tbl th, table.tbl td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
 table.tbl thead th {
   position: sticky; top: 0; z-index: 2;
@@ -373,10 +382,19 @@ table.tbl thead th {
   letter-spacing: .02em; white-space: nowrap;
   border-bottom: 1px solid var(--border);
 }
-table.tbl thead th.sortable { cursor: pointer; user-select: none; }
-table.tbl thead th.sortable:hover { color: var(--accent); }
-table.tbl thead th .arrow { opacity: .35; font-size: 9px; margin-left: 3px; }
-table.tbl thead th.sorted .arrow { opacity: 1; color: var(--accent); }
+/* 정렬 열: <th> 안의 버튼이 칸을 채우고 패딩을 대신한다 */
+table.tbl thead th.sortable { padding: 0; }
+table.tbl thead th .sort-btn {
+  display: flex; align-items: center; gap: 3px;
+  width: 100%; min-height: 34px; padding: 9px 12px;
+  border: 0; background: none; cursor: pointer; user-select: none;
+  font: inherit; color: inherit; letter-spacing: inherit; text-align: inherit;
+}
+table.tbl thead th.num .sort-btn { justify-content: flex-end; }
+table.tbl thead th .sort-btn:hover { color: var(--accent); }
+table.tbl thead th .sort-btn:focus-visible { outline-offset: -2px; }
+table.tbl thead th .arrow { opacity: .35; font-size: 9px; }
+table.tbl thead th[aria-sort] .arrow { opacity: 1; color: var(--accent); }
 table.tbl tbody tr:hover { background: var(--surface-2); }
 table.tbl tbody tr:last-child td { border-bottom: none; }
 table.tbl td.num, table.tbl th.num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -583,28 +601,36 @@ textarea.inp { resize: vertical; min-height: 70px; line-height: 1.5; }
 /* ==========================================================================
    Modal
    ========================================================================== */
-.modal-back {
-  position: fixed; inset: 0; z-index: 60;
-  background: rgba(8,12,20,.5);
-  backdrop-filter: blur(3px);
-  display: grid; place-items: center;
-  padding: 24px;
-  animation: fade .14s ease;
-}
-@keyframes fade { from { opacity: 0 } }
-.modal {
-  width: min(720px, 100%);
+/* 네이티브 <dialog> — showModal() 로 열면 최상위 레이어 + ::backdrop 이 생긴다 */
+dialog.modal {
+  width: min(720px, 100% - 48px);
+  max-width: none;
   max-height: 88vh;
-  display: flex; flex-direction: column;
+  padding: 0;
+  color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
+}
+/* display 는 열린 상태에만 — 무조건 지정하면 닫힌 dialog 도 보인다 */
+dialog.modal[open] {
+  display: flex; flex-direction: column;
   animation: pop .16s cubic-bezier(.2,.9,.3,1.1);
 }
+/* 대화상자 안·배경 위의 스크롤이 뒤 페이지로 이어지지 않게 (body overflow 잠금은 쓰지 않음) */
+dialog.modal:modal { overscroll-behavior: contain; }
+dialog.modal::backdrop {
+  background: rgba(8,12,20,.5);
+  backdrop-filter: blur(3px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  animation: fade .14s ease;
+}
+@keyframes fade { from { opacity: 0 } }
 @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.985) } }
-.modal.wide { width: min(940px, 100%); }
+dialog.modal.wide { width: min(940px, 100% - 48px); }
 .modal > form {
   display: flex; flex-direction: column;
   min-height: 0; flex: 1;
@@ -688,9 +714,11 @@ body.ro .readonly-lock { display: inline-flex; }
   .shell { grid-template-columns: 1fr; grid-template-areas: "topbar" "main" "foot"; }
   .sidebar {
     position: fixed; left: 0; top: 0; width: 268px;
-    transform: translateX(-100%); transition: transform .2s ease;
+    transform: translateX(-100%);
   }
-  body.nav-open .sidebar { transform: none; }
+  /* 닫힌 서랍은 화면 밖에 있어도 Tab 으로 들어가지 않도록 visibility 로 숨긴다 (닫힘 애니메이션 뒤에) */
+  .sidebar { visibility: hidden; transition: transform .2s ease, visibility 0s linear .2s; }
+  body.nav-open .sidebar { transform: none; visibility: visible; transition: transform .2s ease; }
   .only-mobile { display: grid; }
   .grid.c4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .grid.c3, .grid.c2 { grid-template-columns: 1fr; }
