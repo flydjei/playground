@@ -16,10 +16,37 @@
     document.documentElement.dataset.theme = t;
   })();
 </script>
+<!-- UI: Pretendard GOV 가변 다이나믹 서브셋 (쓰는 글자 범위만 내려받음) · 숫자/주소: Martian Mono -->
+<link rel="preconnect" href="https://www.unpkg.com" crossorigin>
+<link rel="stylesheet" href="https://www.unpkg.com/pretendard-gov@1.3.9/dist/web/variable/pretendardvariable-gov-dynamic-subset.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..100,400..700&display=swap">
 <!-- 캐시 버스팅: style.css/data.js/app.js를 수정할 때마다 아래 ?v= 값을 올려주세요 -->
-<link rel="stylesheet" href="./assets/style.css?v=9">
+<link rel="stylesheet" href="./assets/style.css?v=11">
 </head>
 <body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 선 아이콘 — stroke 는 currentColor 를 따른다 -->
+    <symbol id="i-dash" viewBox="0 0 24 24"><path d="M4 15a8 8 0 1 1 16 0"/><path d="M12 15l4-5"/><path d="M4 19h16"/></symbol>
+    <symbol id="i-dev" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="5" rx="1"/><rect x="3" y="14" width="18" height="5" rx="1"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/></symbol>
+    <symbol id="i-rack" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="1"/><path d="M5 7.5h14M5 12h14M5 16.5h14"/></symbol>
+    <symbol id="i-elev" viewBox="0 0 24 24"><path d="M6 3v18M18 3v18"/><path d="M9 6h6M9 9h6M9 14h6"/><path d="M4 6h2M4 9h2M4 12h2M4 15h2M4 18h2"/></symbol>
+    <symbol id="i-ip" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/></symbol>
+    <symbol id="i-app" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><path d="M16.5 13v7M13 16.5h7"/></symbol>
+    <symbol id="i-report" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 16V10M12 16V5M17 16v-4"/></symbol>
+    <symbol id="i-log" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-config" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M7 14h10v6H7z"/></symbol>
+    <symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  </defs>
+</svg>
 
 <a class="skip-link" href="#main">본문으로 건너뛰기</a>
 
@@ -29,9 +56,8 @@
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-          <rect x="4" y="2.5" width="16" height="19" rx="2.5"/>
-          <path d="M7.5 7h9M7.5 12h9M7.5 17h5"/>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <rect x="5" y="2.5" width="14" height="19" rx="1"/><path d="M8.5 7h7M8.5 11h7M8.5 15h4"/>
         </svg>
       </span>
       <span class="brand-text">
@@ -42,28 +68,28 @@
 
     <nav class="nav" id="nav" aria-label="주요 메뉴">
       <a class="nav-item" href="#/dashboard"      data-match="dashboard">
-        <span class="ni" aria-hidden="true">🏠</span> 대시보드 <span class="nav-count" data-count="alerts" title="점검 필요 항목"></span></a>
+        <svg class="ni" aria-hidden="true"><use href="#i-dash"/></svg> 대시보드 <span class="nav-count" data-count="alerts" title="점검 필요 항목"></span></a>
       <a class="nav-item" href="#/devices"        data-match="devices,device">
-        <span class="ni" aria-hidden="true">🖥️</span> 장비 <span class="nav-count" data-count="devices"></span></a>
+        <svg class="ni" aria-hidden="true"><use href="#i-dev"/></svg> 장비 <span class="nav-count" data-count="devices"></span></a>
       <a class="nav-item" href="#/racks"          data-match="racks,rack">
-        <span class="ni" aria-hidden="true">🗄️</span> 랙 <span class="nav-count" data-count="racks"></span></a>
+        <svg class="ni" aria-hidden="true"><use href="#i-rack"/></svg> 랙 <span class="nav-count" data-count="racks"></span></a>
       <a class="nav-item" href="#/physical"       data-match="physical">
-        <span class="ni" aria-hidden="true">📐</span> 랙 실장도</a>
+        <svg class="ni" aria-hidden="true"><use href="#i-elev"/></svg> 랙 실장도</a>
       <a class="nav-item" href="#/ipam"           data-match="ipam,subnet">
-        <span class="ni" aria-hidden="true">🌐</span> IP 관리 <span class="nav-count" data-count="subnets"></span></a>
+        <svg class="ni" aria-hidden="true"><use href="#i-ip"/></svg> IP 관리 <span class="nav-count" data-count="subnets"></span></a>
       <a class="nav-item" href="#/apps"           data-match="apps,app">
-        <span class="ni" aria-hidden="true">🧩</span> 앱 <span class="nav-count" data-count="apps"></span></a>
+        <svg class="ni" aria-hidden="true"><use href="#i-app"/></svg> 앱 <span class="nav-count" data-count="apps"></span></a>
       <a class="nav-item" href="#/reports"        data-match="reports">
-        <span class="ni" aria-hidden="true">📊</span> 리포트</a>
+        <svg class="ni" aria-hidden="true"><use href="#i-report"/></svg> 리포트</a>
       <a class="nav-item" href="#/activity"       data-match="activity">
-        <span class="ni" aria-hidden="true">🕘</span> 활동 로그</a>
+        <svg class="ni" aria-hidden="true"><use href="#i-log"/></svg> 활동 로그</a>
       <a class="nav-item" href="#/config"         data-match="config">
-        <span class="ni" aria-hidden="true">⚙️</span> 설정</a>
+        <svg class="ni" aria-hidden="true"><use href="#i-config"/></svg> 설정</a>
     </nav>
 
     <div class="sidebar-foot">
       <a class="nav-item subtle" href="#/system"  data-match="system">
-        <span class="ni" aria-hidden="true">ℹ️</span> 시스템 정보</a>
+        <svg class="ni" aria-hidden="true"><use href="#i-info"/></svg> 시스템 정보</a>
       <label class="ro-toggle" title="읽기 전용 모드에서는 추가·수정·삭제가 비활성화됩니다">
         <input type="checkbox" id="readonly-toggle"> <span>읽기 전용 모드</span>
       </label>
@@ -72,17 +98,17 @@
 
   <!-- ===== Topbar ===== -->
   <header class="topbar">
-    <button type="button" class="icon-btn only-mobile" id="menu-btn" aria-label="메뉴" aria-expanded="false" aria-controls="sidebar">☰</button>
+    <button type="button" class="icon-btn only-mobile" id="menu-btn" aria-label="메뉴" aria-expanded="false" aria-controls="sidebar"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg></button>
 
     <form class="search" id="search-form" role="search">
-      <span class="search-ico" aria-hidden="true">🔎</span>
+      <svg class="search-ico" aria-hidden="true"><use href="#i-search"/></svg>
       <input type="search" id="search-input" placeholder="장비명 · 시리얼 · 자산번호 · IP · 서브넷 검색 (예: web, 10.11.0.)" autocomplete="off" aria-label="통합 검색">
       <kbd aria-hidden="true">/</kbd>
     </form>
 
     <div class="topbar-right">
-      <button type="button" class="icon-btn" id="print-btn" title="현재 화면 인쇄" aria-label="현재 화면 인쇄">🖨️</button>
-      <button type="button" class="icon-btn" id="theme-btn" title="테마 전환" aria-label="어두운 테마로 전환">🌗</button>
+      <button type="button" class="icon-btn" id="print-btn" title="현재 화면 인쇄" aria-label="현재 화면 인쇄"><svg class="ico" aria-hidden="true"><use href="#i-print"/></svg></button>
+      <button type="button" class="icon-btn" id="theme-btn" title="테마 전환" aria-label="어두운 테마로 전환"><svg class="ico" aria-hidden="true"><use href="#i-theme"/></svg></button>
       <div class="who" title="접속 계정">
         <span class="avatar">R</span>
         <span class="who-text"><strong>atlas-admin</strong><small>10.20.30.41</small></span>
@@ -110,8 +136,8 @@
 <dialog id="modal" class="modal" closedby="any" aria-labelledby="modal-title"></dialog>
 <div id="toast-root" class="toast-root" role="status" aria-live="polite"></div>
 
-<script src="./assets/ipam-core.js?v=9"></script>
-<script src="./assets/data.js?v=9"></script>
-<script src="./assets/app.js?v=9"></script>
+<script src="./assets/ipam-core.js?v=11"></script>
+<script src="./assets/data.js?v=11"></script>
+<script src="./assets/app.js?v=11"></script>
 </body>
 </html>
