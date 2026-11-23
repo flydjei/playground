@@ -2,6 +2,6 @@
   <!-- 키캡: 아랫변(두께) 위에 윗면 -->
   <rect x="4" y="6" width="56" height="54" rx="12" fill="#095c62"/>
   <rect x="4" y="4" width="56" height="48" rx="12" fill="#0b6e75"/>
-  <text x="32" y="38" font-family="'IBM Plex Sans KR','Segoe UI',system-ui,sans-serif"
+  <text x="32" y="38" font-family="'Pretendard GOV Variable','Pretendard GOV',system-ui,sans-serif"
         font-size="28" font-weight="600" text-anchor="middle" fill="#ffffff">T</text>
 </svg>

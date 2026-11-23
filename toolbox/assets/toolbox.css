@@ -6,13 +6,14 @@
    - 도구는 조용하게: 회색 종이(paper) 위 흰 판(plate), 강조색(signal 청록)은 "지금 할 일" 하나에만.
    - 개성은 한 곳에만: 키캡(.keycap, kbd). 자음 + 한자, Ctrl + Enter, 방향키처럼
      키보드로 쓰는 도구라는 점을 실제 키 모양으로 보여 준다.
-   - 고정폭 글꼴은 IP · 코드값 같은 실제 데이터에만 쓴다. 라벨에는 쓰지 않는다. */
+   - 글꼴은 Pretendard GOV 하나로 통일한다. IP · 코드값 같은 데이터는 고정폭 글꼴 대신
+     같은 글꼴의 고른 폭 숫자(tabular-nums)로 자릿수를 맞춘다. */
 
 :root {
   color-scheme: light dark;
 
-  --font-sans: "IBM Plex Sans KR", "Segoe UI", "Malgun Gothic", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-  --font-mono: "IBM Plex Mono", Consolas, "SF Mono", Menlo, monospace;
+  /* 모든 글자를 Pretendard GOV 로 통일. 불러오지 못했거나 없는 글자(일부 기호 · 가나 등)만 시스템 글꼴로 대체 */
+  --font-sans: "Pretendard GOV Variable", "Pretendard GOV", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "Segoe UI Symbol", sans-serif;
 
   /* 기본 팔레트: ink(글자) · paper(바탕) · plate(판) · signal(강조) · caution/fault(경고/오류) */
   --bg: #f2f3f0;
@@ -125,7 +126,7 @@ h1 {
   margin: 0 0 18px;
   line-height: 1.7;
 }
-code { font-family: var(--font-mono); font-size: .95em; }
+code { font-family: inherit; font-variant-numeric: tabular-nums; }
 .desc code {
   padding: 1px 5px;
   border-radius: 4px;
@@ -224,9 +225,9 @@ kbd,
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
-  font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.6;
+  font-variant-numeric: tabular-nums;
   background: var(--field-ro-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -235,9 +236,9 @@ kbd,
 .tool-sample .out { margin: 0; font: inherit; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
 .tool-sample .in { color: var(--text-sub); }
 .tool-sample .out { color: var(--text); }
-.tool-sample .arrow { color: var(--accent); font-family: var(--font-sans); font-weight: 600; }
+.tool-sample .arrow { color: var(--accent); font-weight: 600; }
 .tool-sample .in kbd { font-size: 12px; }
-.tool-sample .glyphs { font-family: var(--font-sans); font-size: 18px; letter-spacing: .12em; }
+.tool-sample .glyphs { font-size: 18px; letter-spacing: .12em; }
 .home-foot { max-width: 880px; margin: 14px 0 0; font-size: 12px; color: var(--text-muted); }
 
 /* ---------- 패널 ---------- */
@@ -317,9 +318,9 @@ textarea.field {
   min-height: 0;
   resize: none;
   padding: 10px 12px;
-  font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.6;
+  font-variant-numeric: tabular-nums;
 }
 textarea.field[readonly] { background: var(--field-ro-bg); }
 /* 입력이 바뀌어 더 이상 최신이 아닌 결과 */
